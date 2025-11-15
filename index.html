@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>HTML → JPG Converter</title>
+  <!-- html2canvas -->
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <!-- Google Font -->
+  <link rel="preconnect" href="https://fonts.gstatic.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" 
+        rel="stylesheet">
+  <style>
+    :root {
+      --primary:    #4f46e5;
+      --accent:     #6366f1;
+      --bg:         #f5f7fa;
+      --surface:    #ffffff;
+      --shadow:     rgba(0, 0, 0, 0.1);
+      --text-high:  #1f2937;
+      --text-med:   #4b5563;
+      --radius:     8px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text-high);
+      line-height: 1.6;
+    }
+    .container {
+      max-width: 800px;
+      margin: 2rem auto;
+      padding: 0 1rem;
+    }
+    .card {
+      background: var(--surface);
+      border-radius: var(--radius);
+      box-shadow: 0 4px 16px var(--shadow);
+      padding: 2rem;
+    }
+    .card h1 {
+      text-align: center;
+      color: var(--primary);
+      font-size: 1.75rem;
+      font-weight: 600;
+    }
+    .form-group {
+      margin-top: 1.5rem;
+      display: flex;
+      flex-direction: column;
+    }
+    .form-group label {
+      font-weight: 500;
+      margin-bottom: 0.5rem;
+      color: var(--text-med);
+    }
+    .form-group input[type="number"],
+    .form-group textarea,
+    .form-group input[type="range"] {
+      font-size: 1rem;
+      padding: 0.75rem 1rem;
+      border: 1px solid #d1d5db;
+      border-radius: var(--radius);
+      background: #f9fafb;
+      transition: border-color 0.2s;
+      width: 100%;
+    }
+    .form-group input[type="number"]:focus,
+    .form-group textarea:focus,
+    .form-group input[type="range"]:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+    .form-group textarea {
+      resize: vertical;
+      height: 150px;
+      font-family: monospace;
+    }
+    /* Custom file‐upload button */
+    .file-upload {
+      position: relative;
+      display: inline-block;
+      width: 100%;
+    }
+    .file-upload button {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      font-size: 1rem;
+      font-weight: 500;
+      color: #fff;
+      background: var(--primary);
+      border: none;
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+    }
+    .file-upload button:hover {
+      background: var(--accent);
+      transform: translateY(-1px);
+    }
+    .file-upload button:active {
+      transform: translateY(1px);
+    }
+    .file-upload input[type="file"] {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      opacity: 0;
+      cursor: pointer;
+    }
+    .file-upload .file-name {
+      margin-top: 0.5rem;
+      font-size: 0.9rem;
+      color: var(--text-med);
+      word-break: break-all;
+    }
+    /* Slider styling */
+    input[type="range"] {
+      -webkit-appearance: none;
+      background: #e5e7eb;
+      height: 8px;
+      border-radius: 4px;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 20px; height: 20px;
+      background: var(--primary);
+      border: 2px solid #fff;
+      border-radius: 50%;
+      box-shadow: 0 2px 4px var(--shadow);
+      margin-top: -6px;
+      transition: background 0.2s;
+    }
+    input[type="range"]::-webkit-slider-thumb:hover {
+      background: var(--accent);
+    }
+    input[type="range"]::-moz-range-thumb {
+      width: 20px; height: 20px;
+      background: var(--primary);
+      border: none;
+      border-radius: 50%;
+    }
+    /* Generate button (updated) */
+    #generateBtn {
+      margin-top: 2rem;
+      width: 100%;
+      padding: 0.75rem;
+      font-size: 1rem;
+      font-weight: 500;
+      color: #fff;
+      background: var(--primary);
+      border: none;
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: background 0.2s ease, transform 0.2s ease;
+    }
+    #generateBtn:hover {
+      background: var(--accent);
+      transform: scale(1.03);
+    }
+    #generateBtn:active {
+      transform: scale(0.97);
+    }
+    #generateBtn:disabled {
+      background: #a5b4fc;
+      cursor: not-allowed;
+      transform: none;
+    }
+    /* Hidden preview pane */
+    #preview {
+      position: absolute;
+      top: -9999px;
+      left: -9999px;
+      background: #fff;
+      padding: 1rem;
+      border: 1px solid #d1d5db;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <div class="card">
+      <h1>HTML to JPG Converter</h1>
+
+      <div class="form-group file-upload">
+        <label>Load HTML File</label>
+        <button type="button">📂 Choose File</button>
+        <input type="file" id="fileInput" accept=".html,text/html">
+        <div class="file-name" id="fileName">No file chosen</div>
+      </div>
+
+      <div class="form-group">
+        <label for="widthInput">
+          Output Width: <strong><span id="widthValue">1042</span> px</strong>
+        </label>
+        <input type="range" id="widthInput" min="100" max="5000" step="10" value="1042">
+      </div>
+
+      <div class="form-group">
+        <label for="scaleInput">
+          Zoom Factor: <strong><span id="scaleValue">7.0</span>x</strong>
+        </label>
+        <input type="range" id="scaleInput" min="1" max="20" step="0.1" value="7">
+      </div>
+
+      <div class="form-group">
+        <label for="htmlInput">Paste HTML Code</label>
+        <textarea id="htmlInput" placeholder="<h1>Hello World</h1>"></textarea>
+      </div>
+
+      <button id="generateBtn">🚀 Generate JPG</button>
+    </div>
+  </div>
+
+  <!-- Off-screen preview element -->
+  <div id="preview"></div>
+
+  <script>
+    const fileInput   = document.getElementById('fileInput');
+    const fileNameEl  = document.getElementById('fileName');
+    const chooseBtn   = document.querySelector('.file-upload button');
+    const widthInput  = document.getElementById('widthInput');
+    const widthValue  = document.getElementById('widthValue');
+    const scaleInput  = document.getElementById('scaleInput');
+    const scaleValue  = document.getElementById('scaleValue');
+    const htmlInput   = document.getElementById('htmlInput');
+    const generateBtn = document.getElementById('generateBtn');
+    const preview     = document.getElementById('preview');
+
+    // Custom file‐upload button
+    chooseBtn.addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', e => {
+      const file = e.target.files[0];
+      if (file) {
+        fileNameEl.textContent = file.name;
+        const reader = new FileReader();
+        reader.onload = evt => htmlInput.value = evt.target.result;
+        reader.readAsText(file);
+      } else {
+        fileNameEl.textContent = 'No file chosen';
+      }
+    });
+
+    // Sync sliders with labels
+    widthInput.addEventListener('input', () => {
+      widthValue.textContent = widthInput.value;
+    });
+    scaleInput.addEventListener('input', () => {
+      scaleValue.textContent = parseFloat(scaleInput.value).toFixed(1);
+    });
+
+    generateBtn.addEventListener('click', () => {
+      generateBtn.disabled = true;
+      generateBtn.textContent = '⏳ Generating...';
+
+      preview.innerHTML = htmlInput.value;
+      const targetWidth = parseInt(widthInput.value, 10) || 1042;
+      const scaleFactor = parseFloat(scaleInput.value) || 7;
+      preview.style.width = `${targetWidth}px`;
+
+      html2canvas(preview, {
+        width:  targetWidth,
+        scale:  scaleFactor,
+        useCORS: true,
+        allowTaint: false
+      })
+      .then(canvas => {
+        canvas.toBlob(blob => {
+          const link = document.createElement('a');
+          const scaleLabel = `${scaleFactor % 1 === 0
+                                ? scaleFactor.toFixed(0)
+                                : scaleFactor.toFixed(1)}x`;
+          link.download = `capture_${targetWidth}px_${scaleLabel}.jpg`;
+          link.href = URL.createObjectURL(blob);
+          link.click();
+          URL.revokeObjectURL(link.href);
+
+          generateBtn.disabled = false;
+          setTimeout(() => {
+            generateBtn.textContent = '🚀 Generate JPG';
+          }, 300);
+        }, 'image/jpeg', 1.0);
+      })
+      .catch(err => {
+        console.error(err);
+        alert('Error generating image. See console for details.');
+        generateBtn.disabled = false;
+        generateBtn.textContent = '🚀 Generate JPG';
+      });
+    });
+  </script>
+</body>
+</html>
