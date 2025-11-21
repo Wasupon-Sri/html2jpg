@@ -37,11 +37,15 @@
             background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
         }
         
-        /* Ensure the capture target has a white background by default if not specified in HTML */
+        /* Ensure the capture target has a white background by default */
         #capture-target {
             background-color: white; 
             min-height: 200px;
-            overflow: hidden; /* Prevent margin collapse issues */
+            display: flex; /* Changed to flex to support better centering options */
+            flex-direction: row;
+            flex-wrap: wrap;
+            align-content: flex-start;
+            overflow: visible;
         }
     </style>
 </head>
@@ -96,6 +100,15 @@
                     <p class="text-xs text-gray-400 mt-1">Higher zoom = Larger resolution (2K/4K/8K)</p>
                 </div>
 
+                <!-- Center Content Toggle (New) -->
+                <div class="flex items-center justify-between bg-gray-50 p-3 rounded-lg border border-gray-200">
+                    <label for="centerToggle" class="text-sm font-medium text-gray-700 cursor-pointer select-none">Center Content in Output</label>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="centerToggle" class="sr-only peer">
+                        <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                    </label>
+                </div>
+
             </div>
 
             <!-- Code Input -->
@@ -126,9 +139,7 @@
             <!-- Preview Wrapper (Scrollable) -->
             <div id="preview-wrapper" class="flex-grow border border-gray-300 rounded-xl overflow-auto shadow-inner relative h-[600px] lg:h-auto p-4 flex items-start justify-center">
                 <!-- The Actual Element to Capture -->
-                <!-- We use transform-origin top left and scale via JS for visual preview fit if needed, 
-                     but mainly we just let it overflow with scrollbars for accuracy -->
-                <div id="capture-target" class="shadow-2xl">
+                <div id="capture-target" class="shadow-2xl text-left">
                     <!-- Content injected here -->
                 </div>
             </div>
@@ -151,6 +162,7 @@
         const widthValue = document.getElementById('widthValue');
         const zoomRange = document.getElementById('zoomRange');
         const zoomValue = document.getElementById('zoomValue');
+        const centerToggle = document.getElementById('centerToggle'); // Center Toggle
         const htmlInput = document.getElementById('htmlInput');
         const fileInput = document.getElementById('fileInput');
         const clearBtn = document.getElementById('clearBtn');
@@ -179,12 +191,26 @@
             const width = widthRange.value;
             captureTarget.style.width = `${width}px`;
             captureTarget.innerHTML = htmlInput.value;
+
+            // Handle Centering
+            if (centerToggle.checked) {
+                captureTarget.classList.remove('text-left');
+                captureTarget.classList.add('justify-center');
+                // Also ensure text-align center is applied for inline-blocks like text or buttons
+                captureTarget.style.textAlign = 'center'; 
+            } else {
+                captureTarget.classList.remove('justify-center');
+                captureTarget.classList.add('text-left');
+                captureTarget.style.textAlign = 'left';
+            }
         };
 
         // Initial Update
         updatePreview();
 
         // Event Listeners for Controls
+        centerToggle.addEventListener('change', updatePreview);
+
         widthRange.addEventListener('input', (e) => {
             widthValue.innerText = `${e.target.value} px`;
             updatePreview();
@@ -200,7 +226,7 @@
             clearTimeout(timeout);
             timeout = setTimeout(updatePreview, 500);
         });
-        
+
         // Clear Button Handler
         clearBtn.addEventListener('click', () => {
             htmlInput.value = '';
@@ -226,25 +252,23 @@
             loadingOverlay.classList.remove('hidden');
             loadingOverlay.classList.add('flex');
 
-            // Small delay to allow UI to update (show loader)
             setTimeout(() => {
                 const width = parseInt(widthRange.value);
                 const scale = parseFloat(zoomRange.value);
 
                 html2canvas(captureTarget, {
-                    scale: scale, // The key parameter for resolution
+                    scale: scale,
                     width: width,
-                    backgroundColor: null, // Transparent background handling if needed, though JPG doesn't support transparency
-                    useCORS: true, // Try to load images from other domains
-                    logging: false
+                    backgroundColor: '#ffffff', // Forces white background (fixes black bars)
+                    useCORS: true,
+                    logging: false,
+                    windowWidth: width, 
                 }).then(canvas => {
-                    // Create download link
                     const link = document.createElement('a');
                     link.download = `html-render-${Date.now()}.jpg`;
-                    link.href = canvas.toDataURL('image/jpeg', 0.9); // 0.9 Quality
+                    link.href = canvas.toDataURL('image/jpeg', 0.9);
                     link.click();
 
-                    // Hide loader
                     loadingOverlay.classList.add('hidden');
                     loadingOverlay.classList.remove('flex');
                 }).catch(err => {
