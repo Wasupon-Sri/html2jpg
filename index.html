@@ -524,9 +524,8 @@
             setTimeout(() => {
                 const scale = parseFloat(zoomRange.value);
                 
-                // --- FIX: BACKGROUND PROCESSING WITH PRECISE COORDINATES ---
+                // 1. Calculate Cropping Coordinates relative to the Element's Top-Left
                 const rect = captureTarget.getBoundingClientRect();
-                // Map visual ratio to DOM ratio in case of transforms
                 const ratioX = captureTarget.offsetWidth / rect.width;
                 const ratioY = captureTarget.offsetHeight / rect.height;
                 
@@ -535,69 +534,82 @@
                 const domCropW = cropRect.w * ratioX;
                 const domCropH = cropRect.h * ratioY;
 
-                // --- CRITICAL FIX: DISABLE TRANSITIONS ---
-                // The 'transition-all' class causes the reset to animate, which ruins the snapshot.
-                // We must remove it temporarily.
-                captureTarget.classList.remove('transition-all', 'duration-300');
-                const originalTransform = captureTarget.style.transform;
-                captureTarget.style.transform = 'none';
+                // 2. CLONE STRATEGY: Create a clean clone to capture
+                // This avoids issues with parent scrollbars, fixed positioning context, or hidden overflow
+                const clone = captureTarget.cloneNode(true);
+                
+                // 3. Style the clone to ensure it renders fully
+                clone.style.position = 'fixed';
+                clone.style.top = '0';
+                clone.style.left = '0';
+                clone.style.zIndex = '-9999'; // Hide behind everything
+                clone.style.width = captureTarget.offsetWidth + 'px'; // Match width exactly
+                clone.style.height = 'auto'; // Let height flow
+                clone.style.transform = 'none';
+                clone.style.transition = 'none';
+                clone.style.margin = '0';
+                clone.style.overflow = 'visible'; // Force visibility
+                
+                // Remove crop overlay from clone if it got copied
+                const cloneOverlay = clone.querySelector('#crop-overlay');
+                if(cloneOverlay) cloneOverlay.remove();
 
-                // Give browser a tick to apply the removal of transition
-                requestAnimationFrame(() => {
-                    html2canvas(captureTarget, {
-                        scale: scale, // High Res
-                        backgroundColor: '#ffffff', 
-                        useCORS: true,
-                        logging: false,
-                        scrollY: -window.scrollY,
-                        scrollX: -window.scrollX,
-                        windowWidth: document.documentElement.offsetWidth,
-                        windowHeight: document.documentElement.offsetHeight,
-                        onclone: (clonedDoc) => {
-                            // --- FIX: FORCE SHOW HIDDEN ELEMENTS ---
-                            // Inject style to disable animations on the clone to ensure elements 
-                            // like Fade-Ins are fully visible
-                            const style = clonedDoc.createElement('style');
-                            style.innerHTML = '* { animation: none !important; transition: none !important; }';
-                            clonedDoc.head.appendChild(style);
-                        }
-                    }).then(fullCanvas => {
-                        // Restore UI state
-                        captureTarget.style.transform = originalTransform;
-                        captureTarget.classList.add('transition-all', 'duration-300');
+                document.body.appendChild(clone);
 
-                        // --- MANUAL CROP ---
-                        const cropCanvas = document.createElement('canvas');
-                        cropCanvas.width = domCropW * scale;
-                        cropCanvas.height = domCropH * scale;
-                        
-                        const ctx = cropCanvas.getContext('2d');
-                        
-                        // Source coords
-                        const sx = domCropX * scale;
-                        const sy = domCropY * scale;
-                        const sw = domCropW * scale;
-                        const sh = domCropH * scale;
+                // 4. Capture the Clone
+                html2canvas(clone, {
+                    scale: scale,
+                    backgroundColor: null, // Transparent background if needed, or '#ffffff'
+                    useCORS: true,
+                    logging: false,
+                    scrollY: 0,
+                    scrollX: 0,
+                    windowWidth: document.documentElement.clientWidth,
+                    windowHeight: document.documentElement.clientHeight,
+                    onclone: (clonedDoc) => {
+                        const style = clonedDoc.createElement('style');
+                        style.innerHTML = '* { animation: none !important; transition: none !important; }';
+                        clonedDoc.head.appendChild(style);
+                    }
+                }).then(fullCanvas => {
+                    document.body.removeChild(clone); // Clean up
 
+                    // 5. Crop the specific region
+                    const cropCanvas = document.createElement('canvas');
+                    cropCanvas.width = domCropW * scale;
+                    cropCanvas.height = domCropH * scale;
+                    
+                    const ctx = cropCanvas.getContext('2d');
+                    
+                    const sx = domCropX * scale;
+                    const sy = domCropY * scale;
+                    const sw = domCropW * scale;
+                    const sh = domCropH * scale;
+
+                    // Safety check to prevent drawing out of bounds
+                    if (sx >= 0 && sy >= 0 && (sx + sw) <= fullCanvas.width && (sy + sh) <= fullCanvas.height) {
+                         ctx.drawImage(fullCanvas, sx, sy, sw, sh, 0, 0, cropCanvas.width, cropCanvas.height);
+                    } else {
+                        // Fallback: Draw entire canvas if crop is invalid, or try best fit
+                        console.warn("Crop bounds mismatch, attempting best fit");
                         ctx.drawImage(fullCanvas, sx, sy, sw, sh, 0, 0, cropCanvas.width, cropCanvas.height);
+                    }
 
-                        const link = document.createElement('a');
-                        link.download = `cropped-capture-${Date.now()}.jpg`;
-                        link.href = cropCanvas.toDataURL('image/jpeg', 0.92);
-                        link.click();
-                        
-                        loadingOverlay.classList.add('hidden');
-                        loadingOverlay.classList.remove('flex');
-                        endCropMode();
-                    }).catch(e => {
-                        console.error(e);
-                        captureTarget.style.transform = originalTransform;
-                        captureTarget.classList.add('transition-all', 'duration-300');
-                        alert("Error capturing crop.");
-                        loadingOverlay.classList.add('hidden');
-                        loadingOverlay.classList.remove('flex');
-                        cropOverlay.style.display = 'block'; 
-                    });
+                    const link = document.createElement('a');
+                    link.download = `cropped-capture-${Date.now()}.jpg`;
+                    link.href = cropCanvas.toDataURL('image/jpeg', 0.95);
+                    link.click();
+                    
+                    loadingOverlay.classList.add('hidden');
+                    loadingOverlay.classList.remove('flex');
+                    endCropMode();
+                }).catch(e => {
+                    console.error(e);
+                    if(document.body.contains(clone)) document.body.removeChild(clone);
+                    alert("Error capturing crop.");
+                    loadingOverlay.classList.add('hidden');
+                    loadingOverlay.classList.remove('flex');
+                    cropOverlay.style.display = 'block'; 
                 });
             }, 200);
         });
@@ -662,49 +674,53 @@
             loadingOverlay.classList.add('flex');
 
             setTimeout(() => {
-                const w = parseInt(widthRange.value);
                 const scale = parseFloat(zoomRange.value);
                 
-                // Temporarily remove transition for sharp capture
-                captureTarget.classList.remove('transition-all', 'duration-300');
-                const originalTransform = captureTarget.style.transform;
-                captureTarget.style.transform = 'none';
+                // Full Capture using same Clone Strategy
+                const clone = captureTarget.cloneNode(true);
+                clone.style.position = 'fixed';
+                clone.style.top = '0';
+                clone.style.left = '0';
+                clone.style.zIndex = '-9999';
+                clone.style.width = captureTarget.offsetWidth + 'px';
+                clone.style.height = 'auto';
+                clone.style.transform = 'none';
+                clone.style.transition = 'none';
+                clone.style.margin = '0';
+                clone.style.overflow = 'visible';
                 
-                // Force a reflow/repaint before capture
-                void captureTarget.offsetWidth; 
+                // Remove overlay from clone
+                const cloneOverlay = clone.querySelector('#crop-overlay');
+                if(cloneOverlay) cloneOverlay.remove();
 
-                const fullHeight = captureTarget.scrollHeight;
+                document.body.appendChild(clone);
 
-                html2canvas(captureTarget, {
+                html2canvas(clone, {
                     scale: scale,
-                    width: w,
-                    height: fullHeight,        
-                    windowHeight: fullHeight,  
-                    windowWidth: w,
-                    backgroundColor: '#ffffff', 
+                    backgroundColor: '#ffffff', // Default to white for full capture
                     useCORS: true,
                     logging: false,
-                    scrollY: -window.scrollY,
+                    scrollY: 0,
+                    scrollX: 0,
+                    windowWidth: document.documentElement.clientWidth,
+                    windowHeight: document.documentElement.clientHeight,
                     onclone: (clonedDoc) => {
                         const style = clonedDoc.createElement('style');
                         style.innerHTML = '* { animation: none !important; transition: none !important; }';
                         clonedDoc.head.appendChild(style);
                     } 
                 }).then(canvas => {
-                    // Restore
-                    captureTarget.style.transform = originalTransform;
-                    captureTarget.classList.add('transition-all', 'duration-300');
+                    document.body.removeChild(clone);
 
                     const link = document.createElement('a');
                     link.download = `full-capture-${Date.now()}.jpg`;
-                    link.href = canvas.toDataURL('image/jpeg', 0.92);
+                    link.href = canvas.toDataURL('image/jpeg', 0.95);
                     link.click();
                     loadingOverlay.classList.add('hidden');
                     loadingOverlay.classList.remove('flex');
                 }).catch(e => {
                     console.error(e);
-                    captureTarget.style.transform = originalTransform;
-                    captureTarget.classList.add('transition-all', 'duration-300');
+                    if(document.body.contains(clone)) document.body.removeChild(clone);
                     alert("Error generating image.");
                     loadingOverlay.classList.add('hidden');
                     loadingOverlay.classList.remove('flex');
