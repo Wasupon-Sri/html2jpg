@@ -135,16 +135,11 @@
         }
 
         /* --- SAFE MODE LOGIC (CRITICAL) --- */
-        /* Safe Mode enforces solid backgrounds and readable text colors 
-           for standard export, removing glass effects which often 
-           render poorly in static images or PDF readers.
-        */
         #capture-wrapper.safe-mode * {
             backdrop-filter: none !important;
             -webkit-backdrop-filter: none !important;
         }
         
-        /* Force glass backgrounds to solid white */
         #capture-wrapper.safe-mode .glass-effect,
         #capture-wrapper.safe-mode [class*="bg-white/"],
         #capture-wrapper.safe-mode [class*="backdrop-blur"] {
@@ -155,7 +150,6 @@
             opacity: 1 !important;
         }
 
-        /* Force gradient/transparent text to dark slate */
         #capture-wrapper.safe-mode .gradient-text,
         #capture-wrapper.safe-mode [class*="text-transparent"],
         #capture-wrapper.safe-mode [class*="bg-clip-text"] {
@@ -166,7 +160,6 @@
             -webkit-background-clip: border-box !important;
         }
 
-        /* Force white text on previously glass (now white) backgrounds to dark slate */
         #capture-wrapper.safe-mode .glass-effect .text-white,
         #capture-wrapper.safe-mode [class*="bg-white/"] .text-white,
         #capture-wrapper.safe-mode [class*="backdrop-blur"] .text-white,
@@ -188,15 +181,16 @@
         <div id="canvas-scroller" class="flex-1 h-full overflow-auto checkerboard relative flex items-start justify-start p-8 md:p-20 transition-all">
             
             <!-- The Capture Target Wrapper -->
-            <div id="capture-wrapper" class="bg-white shadow-2xl relative transition-all duration-300 origin-top-left group mx-auto" style="width: 960px; min-height: 600px;">
+            <div id="capture-wrapper" class="relative transition-all duration-300 origin-top-left group mx-auto bg-white" style="width: 1280px;">
+                
                 <!-- User Content Goes Here -->
-                <div id="user-content" class="w-full h-full min-h-[600px]">
+                <div id="user-content" class="w-full h-full">
                     <!-- Content injected via JS -->
                 </div>
                 
                 <!-- Size Indicator (Hover) -->
                 <div class="absolute -top-6 left-0 text-xs font-mono font-bold text-gray-500 opacity-0 group-hover:opacity-100 transition-opacity bg-white/80 px-2 py-1 rounded">
-                    <span id="debug-width">960</span>px
+                    <span id="debug-width">1280</span>px
                 </div>
             </div>
 
@@ -225,10 +219,10 @@
                 <div class="space-y-3">
                     <div class="flex justify-between items-end">
                         <label class="text-xs font-bold uppercase text-slate-500 tracking-wider">Canvas Width</label>
-                        <span id="width-val" class="text-xs font-mono font-bold bg-slate-100 px-2 py-1 rounded text-slate-600">960px</span>
+                        <span id="width-val" class="text-xs font-mono font-bold bg-slate-100 px-2 py-1 rounded text-slate-600">1280px</span>
                     </div>
                     <div class="flex gap-2 items-center">
-                        <input type="range" id="width-slider" min="300" max="3000" value="960" class="flex-1">
+                        <input type="range" id="width-slider" min="300" max="3000" value="1280" class="flex-1">
                         <button onclick="autoFit()" title="Auto-Fit Content" class="w-8 h-8 flex items-center justify-center rounded-lg bg-white border border-gray-200 hover:bg-blue-50 text-blue-600 transition-colors shadow-sm">
                             <i class="fa-solid fa-expand text-xs"></i>
                         </button>
@@ -246,7 +240,7 @@
                         <span id="zoom-val" class="text-xs font-mono font-bold w-10 text-right">4.0x</span>
                     </div>
                     <div class="text-[10px] text-center text-slate-400 font-mono">
-                        Output: <span id="calc-res">3840 x Auto</span> px
+                        Output: <span id="calc-res">5120 x Auto</span> px
                     </div>
                 </div>
 
@@ -421,7 +415,48 @@
         }
 
         function updatePreview() {
-            userContent.innerHTML = codeInput.value;
+            let rawHTML = codeInput.value;
+
+            // --- INTELLIGENT CSS SCOPING & CLEANUP ---
+            // 1. Extract <body class="..."> attributes
+            const bodyMatch = rawHTML.match(/<body([^>]*)>/i);
+            if (bodyMatch) {
+                const attributes = bodyMatch[1];
+                
+                // Extract class
+                let classMatch = attributes.match(/class=["']([^"']*)["']/i);
+                if (classMatch) {
+                    // FILTERING: Remove sizing/positioning classes that break the card layout
+                    let cleanClasses = classMatch[1]
+                        .replace(/\b(min-h-screen|h-screen|w-screen|fixed|absolute|inset-0)\b/g, '')
+                        .replace(/\s+/g, ' ').trim();
+                    
+                    userContent.className = cleanClasses + " w-full"; 
+                    // NOTE: Removed h-full to allow shrink-wrapping height
+                }
+                
+                // Extract style
+                const styleMatch = attributes.match(/style=["']([^"']*)["']/i);
+                if (styleMatch) {
+                    userContent.style.cssText = styleMatch[1];
+                }
+            } else {
+                // Default styles if no body tag found
+                userContent.className = "w-full bg-white";
+                userContent.style.cssText = "";
+            }
+
+            // 2. Scope CSS: Replace 'body {' with '#user-content {' in style blocks
+            const scopedHTML = rawHTML.replace(/<style[^>]*>([\s\S]*?)<\/style>/gi, (match, css) => {
+                const scopedCSS = css.replace(/(^|})\s*body\s*{/gi, '$1 #user-content {')
+                                     .replace(/(^|})\s*body\s*,/gi, '$1 #user-content,');
+                return `<style>${scopedCSS}</style>`;
+            });
+
+            userContent.innerHTML = scopedHTML;
+            
+            // Auto-adjust height to fit content immediately to prevent cutting off
+            captureWrapper.style.height = 'auto';
         }
         
         function toggleSafeMode() {
@@ -461,10 +496,14 @@
         });
 
         function autoFit() {
-            captureWrapper.style.width = 'min-content';
-            // Force a reflow/check of natural scrollWidth
+            // Reset to min to allow shrink calculation
+            captureWrapper.style.width = '0px';
+            
+            // Find the max width required by children
             const naturalWidth = userContent.scrollWidth;
-            const finalWidth = Math.max(300, naturalWidth); // Min 300px
+            
+            // Restore proper sizing
+            const finalWidth = Math.max(300, naturalWidth); 
             
             captureWrapper.style.width = finalWidth + 'px';
             widthSlider.value = finalWidth;
@@ -541,10 +580,8 @@
             loader.classList.remove('hidden');
             document.getElementById('loader-status').textContent = isCrop ? "Cropping High-Res Region..." : "Rendering Full Canvas...";
             
-            // Wait for fonts to ensure no layout shifts
             await document.fonts.ready;
             
-            // Prepare relative coords if cropping
             let relX = 0, relY = 0, relW = 0, relH = 0;
             if (isCrop && cropRect) {
                 const wrapperRect = captureWrapper.getBoundingClientRect();
@@ -556,19 +593,16 @@
 
             const scale = parseFloat(zoomSlider.value);
             
-            // CRITICAL FIX: Get explicit current dimensions
+            // Use offsets for exact capture
             const currentW = captureWrapper.offsetWidth;
             const currentH = captureWrapper.offsetHeight;
 
-            // CRITICAL FIX: Pass explicit dimensions and reset transforms in style
             const options = {
                 backgroundColor: null, 
                 pixelRatio: scale,
                 width: currentW,
                 height: currentH,
                 style: {
-                    // This forces the library to render the element at 0,0 of its internal canvas
-                    // ignoring parent scroll offsets or flex centering margins.
                     transform: 'none',
                     margin: '0',
                     left: '0',
@@ -577,24 +611,20 @@
             };
 
             try {
-                // 1. Capture the full element at high res
                 const dataUrl = await htmlToImage.toJpeg(captureWrapper, options);
                 
                 let finalDataUrl = dataUrl;
 
-                // 2. If cropping, cut the specific piece out of the high-res image
                 if (isCrop && cropRect) {
                     const img = new Image();
                     img.src = dataUrl;
                     await new Promise(resolve => img.onload = resolve);
 
                     const cropCanvas = document.createElement('canvas');
-                    // Calculate scaled dimensions
                     cropCanvas.width = relW * scale;
                     cropCanvas.height = relH * scale;
                     const ctx = cropCanvas.getContext('2d');
 
-                    // drawImage(source, srcX, srcY, srcW, srcH, destX, destY, destW, destH)
                     ctx.drawImage(
                         img, 
                         relX * scale, relY * scale, 
@@ -605,7 +635,6 @@
                     finalDataUrl = cropCanvas.toDataURL("image/jpeg", 0.95);
                 }
                 
-                // 3. Download
                 const link = document.createElement('a');
                 link.download = `cropme-${Date.now()}.jpg`;
                 link.href = finalDataUrl;
@@ -623,7 +652,6 @@
         // --- Crop Selection Logic ---
         function startCropMode() {
             isCropping = true;
-            // Auto collapse panel to see better
             isPanelOpen = false;
             togglePanel(); 
             
@@ -640,7 +668,6 @@
             cropOverlay.classList.add('hidden');
             cropToolbar.classList.add('hidden');
             cropToolbar.classList.remove('flex');
-            // Re-open panel
             isPanelOpen = true;
             panelContent.style.display = 'block'; 
             panelChevron.style.transform = 'rotate(0deg)';
@@ -651,7 +678,6 @@
         }
 
         function getPointerPos(e) {
-            // Support both touch and mouse
             if (e.touches) return { x: e.touches[0].clientX, y: e.touches[0].clientY };
             return { x: e.clientX, y: e.clientY };
         }
@@ -686,7 +712,6 @@
             let newLeft = startX;
             let newTop = startY;
 
-            // Allow dragging in any direction
             if (width < 0) { newLeft = pos.x; width = Math.abs(width); }
             if (height < 0) { newTop = pos.y; height = Math.abs(height); }
 
@@ -711,7 +736,6 @@
                 height: parseInt(cropBox.style.height)
             };
             
-            // Validate minimal size
             if (rect.width < 10 || rect.height < 10) {
                 alert("Selection too small!");
                 return;
