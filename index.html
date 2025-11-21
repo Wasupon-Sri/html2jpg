@@ -529,6 +529,10 @@
                 const targetRect = captureTarget.getBoundingClientRect();
                 const globalX = targetRect.left + window.scrollX + cropRect.x;
                 const globalY = targetRect.top + window.scrollY + cropRect.y;
+                
+                // Temporarily remove scale for accurate capture
+                const originalTransform = captureTarget.style.transform;
+                captureTarget.style.transform = 'none';
 
                 html2canvas(captureTarget, {
                     scale: scale,
@@ -544,6 +548,9 @@
                     windowWidth: document.documentElement.offsetWidth,
                     windowHeight: document.documentElement.offsetHeight
                 }).then(canvas => {
+                    // Restore scale
+                    captureTarget.style.transform = originalTransform;
+
                     const link = document.createElement('a');
                     link.download = `cropped-capture-${Date.now()}.jpg`;
                     link.href = canvas.toDataURL('image/jpeg', 0.92);
@@ -554,6 +561,8 @@
                     endCropMode();
                 }).catch(e => {
                     console.error(e);
+                    // Restore scale on error
+                    captureTarget.style.transform = originalTransform;
                     alert("Error capturing crop.");
                     loadingOverlay.classList.add('hidden');
                     loadingOverlay.classList.remove('flex');
@@ -626,6 +635,10 @@
                 const scale = parseFloat(zoomRange.value);
                 const fullHeight = captureTarget.scrollHeight;
 
+                // Temporarily remove scale for accurate capture
+                const originalTransform = captureTarget.style.transform;
+                captureTarget.style.transform = 'none';
+
                 html2canvas(captureTarget, {
                     scale: scale,
                     width: w,
@@ -637,6 +650,9 @@
                     logging: false,
                     scrollY: -window.scrollY, 
                 }).then(canvas => {
+                    // Restore scale
+                    captureTarget.style.transform = originalTransform;
+
                     const link = document.createElement('a');
                     link.download = `full-capture-${Date.now()}.jpg`;
                     link.href = canvas.toDataURL('image/jpeg', 0.92);
@@ -645,6 +661,8 @@
                     loadingOverlay.classList.remove('flex');
                 }).catch(e => {
                     console.error(e);
+                    // Restore scale on error
+                    captureTarget.style.transform = originalTransform;
                     alert("Error generating image.");
                     loadingOverlay.classList.add('hidden');
                     loadingOverlay.classList.remove('flex');
