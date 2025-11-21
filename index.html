@@ -525,21 +525,29 @@
             setTimeout(() => {
                 const scale = parseFloat(zoomRange.value);
                 
-                // Calculate Coordinates accounting for Scroll and Position
-                const targetRect = captureTarget.getBoundingClientRect();
-                const globalX = targetRect.left + window.scrollX + cropRect.x;
-                const globalY = targetRect.top + window.scrollY + cropRect.y;
+                // --- EXACT PRECISION FIX: BACKGROUND PROCESSING STRATEGY ---
+                // 1. We ignore the unreliable 'crop' options of html2canvas.
+                // 2. Instead, we capture the ENTIRE element at the high resolution first.
+                // 3. Then we manually crop the result using a canvas.
                 
-                // Temporarily remove scale for accurate capture
+                // Calculate internal DOM coordinates
+                // (In case of any CSS transforms on the view, we map visual ratio to internal DOM ratio)
+                const rect = captureTarget.getBoundingClientRect();
+                const ratioX = captureTarget.offsetWidth / rect.width;
+                const ratioY = captureTarget.offsetHeight / rect.height;
+                
+                // These are the exact pixels relative to the DOM element's top-left
+                const domCropX = cropRect.x * ratioX;
+                const domCropY = cropRect.y * ratioY;
+                const domCropW = cropRect.w * ratioX;
+                const domCropH = cropRect.h * ratioY;
+
+                // Temporarily remove scale for accurate capture context
                 const originalTransform = captureTarget.style.transform;
                 captureTarget.style.transform = 'none';
 
                 html2canvas(captureTarget, {
-                    scale: scale,
-                    x: globalX,
-                    y: globalY,
-                    width: cropRect.w,
-                    height: cropRect.h,
+                    scale: scale, // Render HIGH RES full image
                     backgroundColor: '#ffffff', 
                     useCORS: true,
                     logging: false,
@@ -547,13 +555,31 @@
                     scrollX: -window.scrollX,
                     windowWidth: document.documentElement.offsetWidth,
                     windowHeight: document.documentElement.offsetHeight
-                }).then(canvas => {
-                    // Restore scale
+                }).then(fullCanvas => {
+                    // Restore scale UI
                     captureTarget.style.transform = originalTransform;
+
+                    // --- MANUAL CROP PROCESS ---
+                    const cropCanvas = document.createElement('canvas');
+                    // The target size is the selected DOM size * Zoom Scale
+                    cropCanvas.width = domCropW * scale;
+                    cropCanvas.height = domCropH * scale;
+                    
+                    const ctx = cropCanvas.getContext('2d');
+                    
+                    // Source coordinates on the Full Canvas
+                    // (Since Full Canvas = DOM * Scale, we multiply DOM coords by Scale)
+                    const sx = domCropX * scale;
+                    const sy = domCropY * scale;
+                    const sw = domCropW * scale;
+                    const sh = domCropH * scale;
+
+                    // Draw the specific slice
+                    ctx.drawImage(fullCanvas, sx, sy, sw, sh, 0, 0, cropCanvas.width, cropCanvas.height);
 
                     const link = document.createElement('a');
                     link.download = `cropped-capture-${Date.now()}.jpg`;
-                    link.href = canvas.toDataURL('image/jpeg', 0.92);
+                    link.href = cropCanvas.toDataURL('image/jpeg', 0.92);
                     link.click();
                     
                     loadingOverlay.classList.add('hidden');
@@ -568,6 +594,7 @@
                     loadingOverlay.classList.remove('flex');
                     cropOverlay.style.display = 'block'; 
                 });
+                // --- FIX END ---
             }, 200);
         });
 
