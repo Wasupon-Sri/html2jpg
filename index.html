@@ -2,214 +2,546 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HTML to High-Res JPG Converter</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ColorPop HTML Converter</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- html2canvas Library for rendering DOM to Image -->
+    <!-- html2canvas -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <!-- FontAwesome for Icons -->
+    <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Outfit', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        primary: "#6366f1",
+                        secondary: "#ec4899",
+                    }
+                }
+            }
+        }
+    </script>
+
     <style>
-        /* Custom Scrollbar */
-        ::-webkit-scrollbar {
-            width: 8px;
-            height: 8px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #f1f1f1; 
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #888; 
-            border-radius: 4px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #555; 
+        /* Faster Animated Background */
+        body {
+            background: linear-gradient(-45deg, #ff00cc, #333399, #00ccff, #00ff99, #ffff00, #ff0000);
+            background-size: 600% 600%;
+            animation: gradientBG 6s ease infinite;
+            overflow: hidden; /* Prevent body scroll */
+            touch-action: none; /* Improve touch handling */
         }
 
-        /* Preview Container Isolation */
-        #preview-wrapper {
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* Fixed Glass Card */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.95); /* Slightly more opaque for legibility */
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        /* Range Slider */
+        input[type=range] {
+            -webkit-appearance: none; 
+            background: transparent; 
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 20px;
+            width: 20px;
+            border-radius: 50%;
+            background: white;
+            border: 3px solid #6366f1;
+            cursor: pointer;
+            margin-top: -8px; 
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: linear-gradient(to right, #6366f1, #ec4899);
+            border-radius: 10px;
+        }
+
+        /* Canvas Background */
+        .checkerboard {
+            background-color: #ffffff;
             background-image: 
-                linear-gradient(45deg, #e5e7eb 25%, transparent 25%), 
-                linear-gradient(-45deg, #e5e7eb 25%, transparent 25%), 
-                linear-gradient(45deg, transparent 75%, #e5e7eb 75%), 
-                linear-gradient(-45deg, transparent 75%, #e5e7eb 75%);
-            background-size: 20px 20px;
-            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+                linear-gradient(45deg, #f0f0f0 25%, transparent 25%), 
+                linear-gradient(-45deg, #f0f0f0 25%, transparent 25%), 
+                linear-gradient(45deg, transparent 75%, #f0f0f0 75%), 
+                linear-gradient(-45deg, transparent 75%, #f0f0f0 75%);
+            background-size: 24px 24px;
+            background-position: 0 0, 0 12px, 12px -12px, -12px 0px;
+        }
+
+        .custom-scroll::-webkit-scrollbar { width: 4px; }
+        .custom-scroll::-webkit-scrollbar-track { background: rgba(0,0,0,0.05); }
+        .custom-scroll::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.2); border-radius: 4px; }
+
+        /* --- Crop Styles --- */
+        #crop-overlay {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 9999;
+            cursor: crosshair;
+            display: none; 
+            touch-action: none; /* Critical for mobile drawing */
         }
         
-        /* Ensure the capture target has a white background by default */
-        #capture-target {
-            background-color: white; 
-            min-height: 200px;
-            display: flex; /* Changed to flex to support better centering options */
-            flex-direction: row;
-            flex-wrap: wrap;
-            align-content: flex-start;
-            overflow: visible;
+        #crop-box {
+            position: absolute;
+            border: 2px dashed #fff;
+            box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5);
+            pointer-events: none; 
+        }
+
+        #crop-toolbar {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: white;
+            padding: 10px 20px;
+            border-radius: 50px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            display: none;
+            gap: 10px;
+            z-index: 10000;
+            animation: slideUp 0.3s ease;
+            width: max-content;
+            max-width: 90vw;
+            justify-content: center;
+        }
+
+        @keyframes slideUp {
+            from { transform: translate(-50%, 20px); opacity: 0; }
+            to { transform: translate(-50%, 0); opacity: 1; }
+        }
+
+        /* Collapsed State for Panel */
+        .panel-collapsed {
+            height: 60px !important;
+            overflow: hidden;
+        }
+        
+        /* Mobile Landscape specific adjustments */
+        @media (max-height: 500px) {
+            #settingsPanel {
+                max-height: calc(100vh - 10px);
+            }
+            .panel-body {
+                padding-bottom: 50px; /* Ensure scrolling reaches bottom */
+            }
         }
     </style>
 </head>
-<body class="bg-gray-100 min-h-screen font-sans text-gray-800 p-4 md:p-8">
+<body class="text-slate-800 font-sans h-screen w-screen overflow-hidden relative">
 
-    <div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6">
-        
-        <!-- LEFT PANEL: Controls & Input -->
-        <div class="lg:col-span-4 flex flex-col gap-6">
+    <!-- PREVIEW AREA -->
+    <!-- Padding adjusted for mobile: smaller padding on small screens, larger on lg screens -->
+    <!-- Added pt-[80px] on mobile to prevent content hiding behind fixed header if collapsed, or just general spacing -->
+    <div id="preview-wrapper" class="checkerboard w-full h-full overflow-auto flex items-start justify-center p-4 pt-20 lg:p-20 lg:pl-[360px] relative z-0 transition-all">
+        <!-- The Capture Target -->
+        <div id="capture-target" class="bg-white shadow-2xl origin-top transition-all duration-300 relative">
+            <!-- Content Injected Here -->
             
-            <!-- Header -->
-            <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-                <h1 class="text-2xl font-bold text-indigo-600 mb-2 flex items-center gap-2">
-                    <i class="fa-solid fa-image"></i> HTML to JPG
-                </h1>
-                <p class="text-sm text-gray-500">High-resolution converter (2K+ Ready)</p>
+            <!-- CROP LAYER -->
+            <div id="crop-overlay">
+                <div id="crop-box"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- FIXED SETTINGS PANEL -->
+    <div id="settingsPanel" class="glass-card fixed top-4 left-4 w-[calc(100vw-32px)] sm:w-[320px] max-h-[calc(100vh-32px)] rounded-3xl z-50 flex flex-col transition-all duration-300">
+        
+        <!-- Header -->
+        <div class="bg-white/50 p-4 flex justify-between items-center border-b border-white/50 select-none shrink-0" id="panelHeader">
+            <h2 class="text-sm font-bold text-slate-700 flex items-center gap-2">
+                <i class="fa-solid fa-sliders text-pink-500"></i> Settings
+            </h2>
+            <div class="flex items-center gap-2">
+                <button id="togglePanelBtn" class="w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 transition">
+                    <i class="fa-solid fa-chevron-up transition-transform" id="toggleIcon"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Content (Collapsible) -->
+        <div class="flex-grow overflow-y-auto custom-scroll p-5 flex flex-col gap-5 panel-body">
+            
+            <!-- Width -->
+            <div>
+                <div class="flex justify-between mb-1">
+                    <label class="text-xs font-bold text-slate-500 uppercase">Width</label>
+                    <span class="text-xs font-bold text-indigo-600" id="widthValue">1560 px</span>
+                </div>
+                <input id="widthRange" type="range" min="300" max="3000" value="1560" step="10" class="w-full touch-none">
+            </div>
+
+            <!-- Zoom -->
+            <div>
+                <div class="flex justify-between mb-1">
+                    <label class="text-xs font-bold text-slate-500 uppercase">Zoom</label>
+                    <span class="text-xs font-bold text-pink-600" id="zoomValue">5.6x</span>
+                </div>
+                <input id="zoomRange" type="range" min="1" max="10" value="5.6" step="0.1" class="w-full touch-none">
+            </div>
+
+            <!-- Resolution Badge -->
+            <div class="bg-white/60 p-3 rounded-xl border border-white/50 flex justify-between items-center">
+                <div class="flex flex-col">
+                    <span class="text-[10px] font-bold text-slate-400">OUTPUT SIZE</span>
+                    <span class="text-sm font-bold font-mono text-slate-700" id="finalWidthDisp">--</span>
+                </div>
+                <div id="qualityBadge" class="px-2 py-1 rounded text-[10px] font-bold bg-indigo-100 text-indigo-600">HQ</div>
             </div>
 
             <!-- Controls -->
-            <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 space-y-6">
+            <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-slate-600">Center Content</span>
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" id="centerToggle" class="sr-only peer">
+                    <div class="w-9 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-orange-500 shadow-inner"></div>
+                </label>
+            </div>
+
+            <hr class="border-slate-200/50">
+
+            <!-- Actions -->
+            <div class="grid grid-cols-2 gap-2">
+                <button onclick="document.getElementById('fileInput').click()" class="bg-white hover:bg-slate-50 text-slate-600 py-2 rounded-xl text-xs font-bold shadow-sm border border-slate-200 transition">
+                    <i class="fa-solid fa-upload mr-1"></i> Upload
+                </button>
+                <input type="file" id="fileInput" class="hidden" accept=".html, .txt">
                 
-                <!-- File Upload -->
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Load HTML File (Optional)</label>
-                    <label class="flex items-center justify-center w-full h-12 px-4 transition bg-indigo-50 border-2 border-indigo-100 border-dashed rounded-lg appearance-none cursor-pointer hover:border-indigo-300 focus:outline-none">
-                        <span class="flex items-center space-x-2">
-                            <i class="fa-solid fa-folder-open text-indigo-500"></i>
-                            <span class="text-indigo-600 font-medium text-sm">Choose File</span>
-                        </span>
-                        <input type="file" id="fileInput" class="hidden" accept=".html, .txt">
-                    </label>
-                </div>
-
-                <hr class="border-gray-100">
-
-                <!-- Width Control -->
-                <div>
-                    <div class="flex justify-between mb-2">
-                        <label for="widthRange" class="text-sm font-medium text-gray-700">Output Width</label>
-                        <span class="text-sm font-bold text-indigo-600" id="widthValue">1560 px</span>
-                    </div>
-                    <input id="widthRange" type="range" min="300" max="3000" value="1560" step="10" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-600">
-                </div>
-
-                <!-- Zoom Control -->
-                <div>
-                    <div class="flex justify-between mb-2">
-                        <label for="zoomRange" class="text-sm font-medium text-gray-700">Zoom Factor (Quality)</label>
-                        <span class="text-sm font-bold text-indigo-600" id="zoomValue">5.6x</span>
-                    </div>
-                    <input id="zoomRange" type="range" min="1" max="10" value="5.6" step="0.1" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-600">
-                    <p class="text-xs text-gray-400 mt-1">Higher zoom = Larger resolution (2K/4K/8K)</p>
-                </div>
-
-                <!-- Center Content Toggle (New) -->
-                <div class="flex items-center justify-between bg-gray-50 p-3 rounded-lg border border-gray-200">
-                    <label for="centerToggle" class="text-sm font-medium text-gray-700 cursor-pointer select-none">Center Content in Output</label>
-                    <label class="relative inline-flex items-center cursor-pointer">
-                        <input type="checkbox" id="centerToggle" class="sr-only peer">
-                        <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
-                    </label>
-                </div>
-
-            </div>
-
-            <!-- Code Input -->
-            <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 flex-grow flex flex-col">
-                <div class="flex justify-between items-center mb-2">
-                    <label class="block text-sm font-medium text-gray-700">Paste HTML Code</label>
-                    <button id="clearBtn" class="text-xs text-red-500 hover:text-red-700 font-medium hover:underline transition-colors flex items-center" title="Clear all code">
-                        <i class="fa-solid fa-trash-can mr-1"></i> Clear Code
-                    </button>
-                </div>
-                <textarea id="htmlInput" class="w-full flex-grow p-3 bg-gray-50 border border-gray-200 rounded-lg font-mono text-xs text-gray-600 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none resize-none h-64" placeholder="<div>Paste your code here...</div>"></textarea>
-            </div>
-
-            <!-- Action Button -->
-            <button id="generateBtn" class="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-lg transform transition hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-2">
-                <i class="fa-solid fa-rocket"></i> Generate JPG
-            </button>
-
-        </div>
-
-        <!-- RIGHT PANEL: Preview -->
-        <div class="lg:col-span-8 flex flex-col gap-4">
-            <div class="flex justify-between items-center">
-                <h2 class="text-lg font-semibold text-gray-700">Live Preview</h2>
-                <span class="text-xs bg-gray-200 text-gray-600 px-2 py-1 rounded">Scale: Fit to Screen</span>
+                <button id="openTabBtn" class="bg-white hover:bg-blue-50 text-blue-600 py-2 rounded-xl text-xs font-bold shadow-sm border border-blue-100 transition">
+                    <i class="fa-solid fa-up-right-from-square mr-1"></i> New Tab
+                </button>
             </div>
             
-            <!-- Preview Wrapper (Scrollable) -->
-            <div id="preview-wrapper" class="flex-grow border border-gray-300 rounded-xl overflow-auto shadow-inner relative h-[600px] lg:h-auto p-4 flex items-start justify-center">
-                <!-- The Actual Element to Capture -->
-                <div id="capture-target" class="shadow-2xl text-left">
-                    <!-- Content injected here -->
+            <!-- Editor -->
+            <div id="editorSection" class="border-t border-slate-200/50 pt-4">
+                 <div class="flex justify-between items-center mb-2">
+                    <span class="text-[10px] font-bold text-slate-400 uppercase">Editor</span>
+                    <div class="flex gap-2">
+                        <button id="toggleEditorDisplay" class="text-[10px] font-bold text-indigo-600 hover:underline">Hide/Show</button>
+                        <button id="pasteBtn" class="text-[10px] font-bold text-indigo-600 hover:underline">Paste</button>
+                        <button id="clearBtn" class="text-[10px] font-bold text-red-500 hover:underline">Clear</button>
+                    </div>
+                </div>
+                <div id="editorContainer" class="transition-all duration-300 overflow-hidden" style="max-height: 150px;">
+                    <textarea id="htmlInput" class="w-full h-[120px] p-3 rounded-lg bg-slate-50 border border-slate-200 font-mono text-[10px] text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-y" placeholder="<!-- HTML Code -->"></textarea>
                 </div>
             </div>
-        </div>
 
+            <!-- Buttons Grid -->
+            <div class="grid grid-cols-2 gap-2 mt-auto">
+                 <button id="cropModeBtn" class="py-3 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold rounded-xl shadow-sm transition flex items-center justify-center gap-2 text-xs">
+                    <i class="fa-solid fa-crop-simple"></i> Crop
+                </button>
+                <button id="generateBtn" class="py-3 bg-slate-900 hover:bg-black text-white font-bold rounded-xl shadow-lg transition flex items-center justify-center gap-2 text-xs">
+                    <i class="fa-solid fa-camera text-yellow-400"></i> Capture
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- CROP TOOLBAR (Floating) -->
+    <div id="crop-toolbar">
+        <button id="cancelCropBtn" class="bg-slate-100 hover:bg-slate-200 text-slate-600 px-4 py-2 rounded-full text-xs font-bold transition">
+            Cancel
+        </button>
+        <button id="confirmCropBtn" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-full text-xs font-bold transition shadow-lg flex items-center gap-2">
+            <i class="fa-solid fa-check"></i> Snap
+        </button>
     </div>
 
     <!-- Loading Overlay -->
-    <div id="loadingOverlay" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50 backdrop-blur-sm">
-        <div class="bg-white p-6 rounded-lg shadow-xl flex flex-col items-center">
-            <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600 mb-4"></div>
-            <p class="text-gray-700 font-medium">Rendering High-Res Image...</p>
-            <p class="text-xs text-gray-500 mt-1">Please wait, this may take a few seconds.</p>
+    <div id="loadingOverlay" class="fixed inset-0 bg-white/80 backdrop-blur-md hidden items-center justify-center z-[100]">
+        <div class="flex flex-col items-center animate-bounce">
+            <div class="w-12 h-12 bg-indigo-600 rounded-xl rotate-45 shadow-xl mb-4"></div>
+            <h3 class="text-lg font-bold text-slate-800">Processing...</h3>
         </div>
     </div>
 
     <script>
-        // DOM Elements
+        // --- Elements ---
         const widthRange = document.getElementById('widthRange');
         const widthValue = document.getElementById('widthValue');
         const zoomRange = document.getElementById('zoomRange');
         const zoomValue = document.getElementById('zoomValue');
-        const centerToggle = document.getElementById('centerToggle'); // Center Toggle
+        const qualityBadge = document.getElementById('qualityBadge');
+        const finalWidthDisp = document.getElementById('finalWidthDisp');
+        const centerToggle = document.getElementById('centerToggle'); 
         const htmlInput = document.getElementById('htmlInput');
         const fileInput = document.getElementById('fileInput');
         const clearBtn = document.getElementById('clearBtn');
+        const pasteBtn = document.getElementById('pasteBtn'); 
+        const openTabBtn = document.getElementById('openTabBtn');
         const captureTarget = document.getElementById('capture-target');
         const generateBtn = document.getElementById('generateBtn');
         const loadingOverlay = document.getElementById('loadingOverlay');
+        const editorContainer = document.getElementById('editorContainer');
+        const toggleEditorDisplay = document.getElementById('toggleEditorDisplay');
+        
+        // Panel UI Elements
+        const settingsPanel = document.getElementById('settingsPanel');
+        const togglePanelBtn = document.getElementById('togglePanelBtn');
+        const toggleIcon = document.getElementById('toggleIcon');
+        
+        // Crop Elements
+        const cropModeBtn = document.getElementById('cropModeBtn');
+        const cropOverlay = document.getElementById('crop-overlay');
+        const cropBox = document.getElementById('crop-box');
+        const cropToolbar = document.getElementById('crop-toolbar');
+        const cancelCropBtn = document.getElementById('cancelCropBtn');
+        const confirmCropBtn = document.getElementById('confirmCropBtn');
 
-        // Default Sample HTML
+        // --- Default Content ---
         const defaultHTML = `
-<div style="font-family: 'Segoe UI', sans-serif; padding: 40px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;">
-    <div style="background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); padding: 60px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.2); box-shadow: 0 20px 50px rgba(0,0,0,0.3);">
-        <h1 style="font-size: 4rem; margin: 0; text-shadow: 2px 2px 4px rgba(0,0,0,0.2);">Hello World</h1>
-        <p style="font-size: 1.5rem; margin-top: 20px; opacity: 0.9;">This is a high-resolution HTML render.</p>
-        <div style="margin-top: 40px; display: flex; gap: 20px; justify-content: center;">
-            <span style="background: white; color: #764ba2; padding: 10px 20px; border-radius: 50px; font-weight: bold;">1560px Width</span>
-            <span style="background: white; color: #764ba2; padding: 10px 20px; border-radius: 50px; font-weight: bold;">5.6x Zoom</span>
+<div style="width: 100%; font-family: 'Outfit', sans-serif; background: white; overflow: hidden;">
+    <div style="height: 300px; background: linear-gradient(135deg, #FF3CAC 0%, #784BA0 100%); color: white; display: flex; align-items: center; justify-content: center; text-align: center; flex-direction: column;">
+        <h1 style="font-size: 3.5rem; margin: 0; font-weight: 800;">Crop Me!</h1>
+        <p style="font-size: 1.2rem; opacity: 0.9;">Try the new Crop & Capture tool</p>
+    </div>
+    <div style="padding: 40px; max-width: 800px; margin: 0 auto;">
+        <p style="color: #666; line-height: 1.6; font-size: 1.2rem;">This is a sample page. Click the "Crop & Capture" button, then draw a box around any part of this preview to capture just that area!</p>
+        <div style="margin: 30px 0; display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+            <div style="background: #f0fdf4; padding: 20px; border-radius: 15px; color: #166534;">
+                <strong>Section A</strong><br>Green Box
+            </div>
+            <div style="background: #eff6ff; padding: 20px; border-radius: 15px; color: #1e40af;">
+                <strong>Section B</strong><br>Blue Box
+            </div>
         </div>
     </div>
 </div>`;
 
-        // Initialize
         htmlInput.value = defaultHTML;
-        
-        // Update Preview Function
-        const updatePreview = () => {
-            const width = widthRange.value;
-            captureTarget.style.width = `${width}px`;
-            captureTarget.innerHTML = htmlInput.value;
 
-            // Handle Centering
-            if (centerToggle.checked) {
-                captureTarget.classList.remove('text-left');
-                captureTarget.classList.add('justify-center');
-                // Also ensure text-align center is applied for inline-blocks like text or buttons
-                captureTarget.style.textAlign = 'center'; 
+        // --- UI Logic ---
+
+        // Collapse/Expand Panel
+        let isCollapsed = false;
+        togglePanelBtn.addEventListener('click', () => {
+            isCollapsed = !isCollapsed;
+            if (isCollapsed) {
+                settingsPanel.classList.add('panel-collapsed');
+                toggleIcon.classList.add('rotate-180');
             } else {
-                captureTarget.classList.remove('justify-center');
-                captureTarget.classList.add('text-left');
-                captureTarget.style.textAlign = 'left';
+                settingsPanel.classList.remove('panel-collapsed');
+                toggleIcon.classList.remove('rotate-180');
             }
+        });
+
+        // Collapse/Expand Editor
+        toggleEditorDisplay.addEventListener('click', () => {
+            if (editorContainer.style.maxHeight === '0px') {
+                editorContainer.style.maxHeight = '150px';
+            } else {
+                editorContainer.style.maxHeight = '0px';
+            }
+        });
+        
+        const calculateResolution = () => {
+            const w = parseInt(widthRange.value);
+            const z = parseFloat(zoomRange.value);
+            const totalW = Math.round(w * z);
+            finalWidthDisp.innerText = `${totalW} px`;
+            let label = "SD";
+            if(totalW > 7000) label = "8K ULTRA";
+            else if(totalW > 3800) label = "4K UHD";
+            else if(totalW > 2500) label = "2K QHD";
+            else if(totalW > 1900) label = "1080p";
+            qualityBadge.innerText = label;
         };
 
-        // Initial Update
-        updatePreview();
+        const updatePreview = () => {
+            const w = widthRange.value;
+            captureTarget.style.width = `${w}px`;
+            captureTarget.innerHTML = htmlInput.value;
+            
+            // Re-append crop overlay since innerHTML wipes it
+            captureTarget.appendChild(cropOverlay);
 
-        // Event Listeners for Controls
-        centerToggle.addEventListener('change', updatePreview);
+            if (centerToggle.checked) {
+                captureTarget.style.display = 'flex';
+                captureTarget.style.flexDirection = 'column';
+                captureTarget.style.justifyContent = 'center';
+                captureTarget.style.alignItems = 'center';
+                captureTarget.style.textAlign = 'center'; 
+                captureTarget.style.minHeight = '100%';
+            } else {
+                captureTarget.style.display = 'block';
+                captureTarget.style.textAlign = 'left';
+                captureTarget.style.minHeight = 'auto';
+            }
+            calculateResolution();
+        };
+
+        // --- Crop Logic with Touch Support ---
+        let isCropping = false;
+        let isDrawing = false;
+        let startX = 0, startY = 0;
+        let cropRect = { x: 0, y: 0, w: 0, h: 0 };
+
+        const startCropMode = () => {
+            isCropping = true;
+            cropOverlay.style.display = 'block';
+            cropToolbar.style.display = 'flex';
+            // Collapse panel on mobile to give space
+            if (window.innerWidth < 640) {
+                settingsPanel.classList.add('panel-collapsed');
+                toggleIcon.classList.add('rotate-180');
+            }
+            cropBox.style.width = '0';
+            cropBox.style.height = '0';
+            cropBox.style.borderWidth = '0'; 
+        };
+
+        const endCropMode = () => {
+            isCropping = false;
+            cropOverlay.style.display = 'none';
+            cropToolbar.style.display = 'none';
+        };
+        
+        // Helper to get coordinates from Mouse or Touch events
+        const getCoords = (e) => {
+            const rect = cropOverlay.getBoundingClientRect();
+            let clientX, clientY;
+            
+            if (e.touches && e.touches.length > 0) {
+                clientX = e.touches[0].clientX;
+                clientY = e.touches[0].clientY;
+            } else {
+                clientX = e.clientX;
+                clientY = e.clientY;
+            }
+            
+            return {
+                x: clientX - rect.left,
+                y: clientY - rect.top
+            };
+        };
+
+        const handleStart = (e) => {
+            if (e.cancelable) e.preventDefault(); // Prevent scrolling on touch
+            isDrawing = true;
+            const coords = getCoords(e);
+            startX = coords.x;
+            startY = coords.y;
+            
+            cropBox.style.left = startX + 'px';
+            cropBox.style.top = startY + 'px';
+            cropBox.style.width = '0px';
+            cropBox.style.height = '0px';
+            cropBox.style.borderWidth = '2px';
+        };
+
+        const handleMove = (e) => {
+            if (!isDrawing) return;
+            if (e.cancelable) e.preventDefault(); // Prevent scrolling
+            
+            const coords = getCoords(e);
+            const width = coords.x - startX;
+            const height = coords.y - startY;
+
+            cropRect = {
+                x: width > 0 ? startX : coords.x,
+                y: height > 0 ? startY : coords.y,
+                w: Math.abs(width),
+                h: Math.abs(height)
+            };
+
+            cropBox.style.left = cropRect.x + 'px';
+            cropBox.style.top = cropRect.y + 'px';
+            cropBox.style.width = cropRect.w + 'px';
+            cropBox.style.height = cropRect.h + 'px';
+        };
+
+        const handleEnd = () => {
+            isDrawing = false;
+        };
+
+        // Mouse Listeners
+        cropOverlay.addEventListener('mousedown', handleStart);
+        cropOverlay.addEventListener('mousemove', handleMove);
+        cropOverlay.addEventListener('mouseup', handleEnd);
+
+        // Touch Listeners (Mobile Support)
+        cropOverlay.addEventListener('touchstart', handleStart, { passive: false });
+        cropOverlay.addEventListener('touchmove', handleMove, { passive: false });
+        cropOverlay.addEventListener('touchend', handleEnd);
+
+        cropModeBtn.addEventListener('click', startCropMode);
+        cancelCropBtn.addEventListener('click', endCropMode);
+
+        confirmCropBtn.addEventListener('click', () => {
+            if (cropRect.w === 0 || cropRect.h === 0) {
+                alert("Please draw a box first!");
+                return;
+            }
+
+            loadingOverlay.classList.remove('hidden');
+            loadingOverlay.classList.add('flex');
+            cropOverlay.style.display = 'none';
+
+            setTimeout(() => {
+                const scale = parseFloat(zoomRange.value);
+                
+                html2canvas(captureTarget, {
+                    scale: scale,
+                    x: cropRect.x,
+                    y: cropRect.y,
+                    width: cropRect.w,
+                    height: cropRect.h,
+                    backgroundColor: '#ffffff', 
+                    useCORS: true,
+                    logging: false,
+                }).then(canvas => {
+                    const link = document.createElement('a');
+                    link.download = `cropped-capture-${Date.now()}.jpg`;
+                    link.href = canvas.toDataURL('image/jpeg', 0.92);
+                    link.click();
+                    
+                    loadingOverlay.classList.add('hidden');
+                    loadingOverlay.classList.remove('flex');
+                    endCropMode();
+                }).catch(e => {
+                    console.error(e);
+                    alert("Error capturing crop.");
+                    loadingOverlay.classList.add('hidden');
+                    loadingOverlay.classList.remove('flex');
+                    cropOverlay.style.display = 'block'; 
+                });
+            }, 200);
+        });
+
+        // --- Standard Listeners ---
+        let timer;
+        htmlInput.addEventListener('input', () => {
+            clearTimeout(timer);
+            timer = setTimeout(updatePreview, 300);
+        });
 
         widthRange.addEventListener('input', (e) => {
             widthValue.innerText = `${e.target.value} px`;
@@ -218,68 +550,84 @@
 
         zoomRange.addEventListener('input', (e) => {
             zoomValue.innerText = `${e.target.value}x`;
+            calculateResolution();
         });
 
-        // Debounce Input for Performance
-        let timeout;
-        htmlInput.addEventListener('input', () => {
-            clearTimeout(timeout);
-            timeout = setTimeout(updatePreview, 500);
-        });
-
-        // Clear Button Handler
+        centerToggle.addEventListener('change', updatePreview);
+        
         clearBtn.addEventListener('click', () => {
             htmlInput.value = '';
             updatePreview();
-            htmlInput.focus();
         });
 
-        // File Input Handler
-        fileInput.addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = (event) => {
-                    htmlInput.value = event.target.result;
-                    updatePreview();
-                };
-                reader.readAsText(file);
+        pasteBtn.addEventListener('click', async () => {
+            try {
+                const text = await navigator.clipboard.readText();
+                htmlInput.value = text;
+                updatePreview();
+            } catch (err) {
+                alert("Please paste manually using Ctrl+V");
             }
         });
 
-        // Generate JPG Function
+        openTabBtn.addEventListener('click', () => {
+            const newWindow = window.open();
+            if (newWindow) {
+                newWindow.document.write(htmlInput.value);
+                newWindow.document.close();
+            } else {
+                alert("Popup blocked!");
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                htmlInput.value = ev.target.result;
+                updatePreview();
+            };
+            reader.readAsText(file);
+        });
+
         generateBtn.addEventListener('click', () => {
             loadingOverlay.classList.remove('hidden');
             loadingOverlay.classList.add('flex');
 
             setTimeout(() => {
-                const width = parseInt(widthRange.value);
+                const w = parseInt(widthRange.value);
                 const scale = parseFloat(zoomRange.value);
+                const fullHeight = captureTarget.scrollHeight;
 
                 html2canvas(captureTarget, {
                     scale: scale,
-                    width: width,
-                    backgroundColor: '#ffffff', // Forces white background (fixes black bars)
+                    width: w,
+                    height: fullHeight,        
+                    windowHeight: fullHeight,  
+                    windowWidth: w,
+                    backgroundColor: '#ffffff', 
                     useCORS: true,
                     logging: false,
-                    windowWidth: width, 
+                    scrollY: -window.scrollY, 
                 }).then(canvas => {
                     const link = document.createElement('a');
-                    link.download = `html-render-${Date.now()}.jpg`;
-                    link.href = canvas.toDataURL('image/jpeg', 0.9);
+                    link.download = `full-capture-${Date.now()}.jpg`;
+                    link.href = canvas.toDataURL('image/jpeg', 0.92);
                     link.click();
-
                     loadingOverlay.classList.add('hidden');
                     loadingOverlay.classList.remove('flex');
-                }).catch(err => {
-                    console.error(err);
-                    alert("An error occurred while generating the image. Check console for details.");
+                }).catch(e => {
+                    console.error(e);
+                    alert("Error generating image.");
                     loadingOverlay.classList.add('hidden');
                     loadingOverlay.classList.remove('flex');
                 });
-            }, 100);
+            }, 200);
         });
 
+        // Init
+        updatePreview();
     </script>
 </body>
 </html>
