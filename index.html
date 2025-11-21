@@ -534,17 +534,17 @@
                 const domCropW = cropRect.w * ratioX;
                 const domCropH = cropRect.h * ratioY;
 
-                // 2. CLONE STRATEGY: Create a clean clone to capture
-                // This avoids issues with parent scrollbars, fixed positioning context, or hidden overflow
+                // 2. CLONE STRATEGY
                 const clone = captureTarget.cloneNode(true);
                 
-                // 3. Style the clone to ensure it renders fully
-                clone.style.position = 'fixed';
+                // 3. Style the clone
+                // Use absolute positioning to ensure it can render full height regardless of viewport
+                clone.style.position = 'absolute'; 
                 clone.style.top = '0';
-                clone.style.left = '0';
-                clone.style.zIndex = '-9999'; // Hide behind everything
+                clone.style.left = '0'; 
+                clone.style.zIndex = '-10000'; // Hide deep below
                 clone.style.width = captureTarget.offsetWidth + 'px'; // Match width exactly
-                clone.style.height = 'auto'; // Let height flow
+                clone.style.height = 'auto'; // Let height flow naturally
                 clone.style.transform = 'none';
                 clone.style.transition = 'none';
                 clone.style.margin = '0';
@@ -559,16 +559,25 @@
                 // 4. Capture the Clone
                 html2canvas(clone, {
                     scale: scale,
-                    backgroundColor: null, // Transparent background if needed, or '#ffffff'
+                    backgroundColor: null, 
                     useCORS: true,
                     logging: false,
                     scrollY: 0,
                     scrollX: 0,
-                    windowWidth: document.documentElement.clientWidth,
-                    windowHeight: document.documentElement.clientHeight,
+                    windowWidth: document.documentElement.scrollWidth, // Capture full dimensions
+                    windowHeight: document.documentElement.scrollHeight,
                     onclone: (clonedDoc) => {
                         const style = clonedDoc.createElement('style');
-                        style.innerHTML = '* { animation: none !important; transition: none !important; }';
+                        // --- CRITICAL FIX: FORCE VISIBILITY ---
+                        // Ensures elements with initial opacity:0 (fade-ins) are visible
+                        style.innerHTML = `
+                            * { 
+                                animation: none !important; 
+                                transition: none !important; 
+                                opacity: 1 !important;
+                                visibility: visible !important;
+                            }
+                        `;
                         clonedDoc.head.appendChild(style);
                     }
                 }).then(fullCanvas => {
@@ -587,10 +596,9 @@
                     const sh = domCropH * scale;
 
                     // Safety check to prevent drawing out of bounds
-                    if (sx >= 0 && sy >= 0 && (sx + sw) <= fullCanvas.width && (sy + sh) <= fullCanvas.height) {
+                    if (sx >= 0 && sy >= 0) {
                          ctx.drawImage(fullCanvas, sx, sy, sw, sh, 0, 0, cropCanvas.width, cropCanvas.height);
                     } else {
-                        // Fallback: Draw entire canvas if crop is invalid, or try best fit
                         console.warn("Crop bounds mismatch, attempting best fit");
                         ctx.drawImage(fullCanvas, sx, sy, sw, sh, 0, 0, cropCanvas.width, cropCanvas.height);
                     }
@@ -678,10 +686,10 @@
                 
                 // Full Capture using same Clone Strategy
                 const clone = captureTarget.cloneNode(true);
-                clone.style.position = 'fixed';
+                clone.style.position = 'absolute';
                 clone.style.top = '0';
                 clone.style.left = '0';
-                clone.style.zIndex = '-9999';
+                clone.style.zIndex = '-10000';
                 clone.style.width = captureTarget.offsetWidth + 'px';
                 clone.style.height = 'auto';
                 clone.style.transform = 'none';
@@ -702,11 +710,18 @@
                     logging: false,
                     scrollY: 0,
                     scrollX: 0,
-                    windowWidth: document.documentElement.clientWidth,
-                    windowHeight: document.documentElement.clientHeight,
+                    windowWidth: document.documentElement.scrollWidth,
+                    windowHeight: document.documentElement.scrollHeight,
                     onclone: (clonedDoc) => {
                         const style = clonedDoc.createElement('style');
-                        style.innerHTML = '* { animation: none !important; transition: none !important; }';
+                        style.innerHTML = `
+                            * { 
+                                animation: none !important; 
+                                transition: none !important; 
+                                opacity: 1 !important;
+                                visibility: visible !important;
+                            }
+                        `;
                         clonedDoc.head.appendChild(style);
                     } 
                 }).then(canvas => {
