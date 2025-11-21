@@ -156,8 +156,6 @@
 <body class="text-slate-800 font-sans h-screen w-screen overflow-hidden relative">
 
     <!-- PREVIEW AREA -->
-    <!-- Padding adjusted for mobile: smaller padding on small screens, larger on lg screens -->
-    <!-- Added pt-[80px] on mobile to prevent content hiding behind fixed header if collapsed, or just general spacing -->
     <div id="preview-wrapper" class="checkerboard w-full h-full overflow-auto flex items-start justify-center p-4 pt-20 lg:p-20 lg:pl-[360px] relative z-0 transition-all">
         <!-- The Capture Target -->
         <div id="capture-target" class="bg-white shadow-2xl origin-top transition-all duration-300 relative">
@@ -192,18 +190,20 @@
             <div>
                 <div class="flex justify-between mb-1">
                     <label class="text-xs font-bold text-slate-500 uppercase">Width</label>
-                    <span class="text-xs font-bold text-indigo-600" id="widthValue">1560 px</span>
+                    <!-- DEFAULT WIDTH 1920px -->
+                    <span class="text-xs font-bold text-indigo-600" id="widthValue">1920 px</span>
                 </div>
-                <input id="widthRange" type="range" min="300" max="3000" value="1560" step="10" class="w-full touch-none">
+                <input id="widthRange" type="range" min="300" max="3000" value="1920" step="10" class="w-full touch-none">
             </div>
 
             <!-- Zoom -->
             <div>
                 <div class="flex justify-between mb-1">
                     <label class="text-xs font-bold text-slate-500 uppercase">Zoom</label>
-                    <span class="text-xs font-bold text-pink-600" id="zoomValue">5.6x</span>
+                    <!-- DEFAULT ZOOM 2.0x (1920 * 2 = 3840px = 4K) -->
+                    <span class="text-xs font-bold text-pink-600" id="zoomValue">2.0x</span>
                 </div>
-                <input id="zoomRange" type="range" min="1" max="10" value="5.6" step="0.1" class="w-full touch-none">
+                <input id="zoomRange" type="range" min="1" max="10" value="2.0" step="0.1" class="w-full touch-none">
             </div>
 
             <!-- Resolution Badge -->
@@ -327,10 +327,10 @@
         <p style="color: #666; line-height: 1.6; font-size: 1.2rem;">This is a sample page. Click the "Crop & Capture" button, then draw a box around any part of this preview to capture just that area!</p>
         <div style="margin: 30px 0; display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
             <div style="background: #f0fdf4; padding: 20px; border-radius: 15px; color: #166534;">
-                <strong>Section A</strong><br>Green Box
+                <strong>Default: 1920px</strong><br>4K Ready
             </div>
             <div style="background: #eff6ff; padding: 20px; border-radius: 15px; color: #1e40af;">
-                <strong>Section B</strong><br>Blue Box
+                <strong>High Res</strong><br>Crisp Text
             </div>
         </div>
     </div>
