@@ -103,7 +103,7 @@
             z-index: 9999;
             cursor: crosshair;
             display: none; 
-            touch-action: none; /* Critical for mobile drawing */
+            touch-action: none; 
         }
         
         #crop-box {
@@ -136,13 +136,11 @@
             to { transform: translate(-50%, 0); opacity: 1; }
         }
 
-        /* Collapsed State for Panel */
         .panel-collapsed {
             height: 60px !important;
             overflow: hidden;
         }
         
-        /* Mobile Landscape specific adjustments */
         @media (max-height: 500px) {
             #settingsPanel {
                 max-height: calc(100vh - 10px);
@@ -158,7 +156,7 @@
     <!-- PREVIEW AREA -->
     <div id="preview-wrapper" class="checkerboard w-full h-full overflow-auto flex items-start justify-center p-4 pt-20 lg:p-20 lg:pl-[360px] relative z-0 transition-all">
         <!-- The Capture Target -->
-        <!-- Added text-rendering to ensure fidelity -->
+        <!-- Added text-rendering and display properties for better fitting -->
         <div id="capture-target" class="bg-white shadow-2xl origin-top transition-all duration-300 relative" style="text-rendering: geometricPrecision; -webkit-font-smoothing: antialiased;">
             <!-- Content Injected Here -->
             
@@ -187,12 +185,16 @@
         <!-- Content (Collapsible) -->
         <div class="flex-grow overflow-y-auto custom-scroll p-5 flex flex-col gap-5 panel-body">
             
-            <!-- Width -->
+            <!-- Width & Auto-Fit -->
             <div>
-                <div class="flex justify-between mb-1">
+                <div class="flex justify-between items-center mb-1">
                     <label class="text-xs font-bold text-slate-500 uppercase">Width</label>
-                    <!-- DEFAULT WIDTH 1920px -->
-                    <span class="text-xs font-bold text-indigo-600" id="widthValue">1920 px</span>
+                    <div class="flex items-center gap-2">
+                         <button id="autoFitBtn" class="text-[10px] bg-indigo-100 hover:bg-indigo-200 text-indigo-700 px-2 py-0.5 rounded font-bold transition flex items-center gap-1">
+                            <i class="fa-solid fa-compress"></i> Auto-Fit
+                        </button>
+                        <span class="text-xs font-bold text-indigo-600" id="widthValue">1920 px</span>
+                    </div>
                 </div>
                 <input id="widthRange" type="range" min="300" max="3000" value="1920" step="10" class="w-full touch-none">
             </div>
@@ -201,7 +203,6 @@
             <div>
                 <div class="flex justify-between mb-1">
                     <label class="text-xs font-bold text-slate-500 uppercase">Zoom</label>
-                    <!-- DEFAULT ZOOM 2.0x -->
                     <span class="text-xs font-bold text-pink-600" id="zoomValue">2.0x</span>
                 </div>
                 <input id="zoomRange" type="range" min="1" max="10" value="2.0" step="0.1" class="w-full touch-none">
@@ -303,6 +304,7 @@
         const loadingOverlay = document.getElementById('loadingOverlay');
         const editorContainer = document.getElementById('editorContainer');
         const toggleEditorDisplay = document.getElementById('toggleEditorDisplay');
+        const autoFitBtn = document.getElementById('autoFitBtn'); // New Button
         
         // Panel UI Elements
         const settingsPanel = document.getElementById('settingsPanel');
@@ -399,7 +401,25 @@
             calculateResolution();
         };
 
-        // --- Crop Logic with Touch Support ---
+        // --- Auto Fit Function ---
+        autoFitBtn.addEventListener('click', () => {
+            // 1. Reset width to auto to let content dictate size
+            captureTarget.style.width = 'auto';
+            captureTarget.style.display = 'inline-block'; // Helper to shrink wrap
+            
+            // 2. Measure natural width
+            // We use scrollWidth to get the full content width including potential overflow
+            const naturalWidth = captureTarget.scrollWidth;
+            
+            // 3. Update Slider UI
+            widthRange.value = naturalWidth;
+            widthValue.innerText = naturalWidth + ' px';
+            
+            // 4. Re-apply settings via updatePreview to normalize display/flex settings
+            updatePreview();
+        });
+
+        // --- Crop Logic ---
         let isCropping = false;
         let isDrawing = false;
         let startX = 0, startY = 0;
@@ -409,7 +429,6 @@
             isCropping = true;
             cropOverlay.style.display = 'block';
             cropToolbar.style.display = 'flex';
-            // Collapse panel on mobile to give space
             if (window.innerWidth < 640) {
                 settingsPanel.classList.add('panel-collapsed');
                 toggleIcon.classList.add('rotate-180');
@@ -506,16 +525,13 @@
             setTimeout(() => {
                 const scale = parseFloat(zoomRange.value);
                 
-                // --- COORDINATE FIX FOR CROP ---
-                // Calculate the global document coordinates for the crop box
-                // This accounts for scroll position and element position
+                // Calculate Coordinates accounting for Scroll and Position
                 const targetRect = captureTarget.getBoundingClientRect();
                 const globalX = targetRect.left + window.scrollX + cropRect.x;
                 const globalY = targetRect.top + window.scrollY + cropRect.y;
 
                 html2canvas(captureTarget, {
                     scale: scale,
-                    // Use calculated global coordinates
                     x: globalX,
                     y: globalY,
                     width: cropRect.w,
@@ -523,7 +539,6 @@
                     backgroundColor: '#ffffff', 
                     useCORS: true,
                     logging: false,
-                    // Force scroll reset to ensure alignment during render
                     scrollY: -window.scrollY,
                     scrollX: -window.scrollX,
                     windowWidth: document.documentElement.offsetWidth,
