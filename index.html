@@ -47,7 +47,7 @@
 
         /* Fixed Glass Card */
         .glass-card {
-            background: rgba(255, 255, 255, 0.95); /* Slightly more opaque for legibility */
+            background: rgba(255, 255, 255, 0.95); 
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
             border: 1px solid rgba(255, 255, 255, 0.6);
@@ -148,7 +148,7 @@
                 max-height: calc(100vh - 10px);
             }
             .panel-body {
-                padding-bottom: 50px; /* Ensure scrolling reaches bottom */
+                padding-bottom: 50px; 
             }
         }
     </style>
@@ -158,7 +158,8 @@
     <!-- PREVIEW AREA -->
     <div id="preview-wrapper" class="checkerboard w-full h-full overflow-auto flex items-start justify-center p-4 pt-20 lg:p-20 lg:pl-[360px] relative z-0 transition-all">
         <!-- The Capture Target -->
-        <div id="capture-target" class="bg-white shadow-2xl origin-top transition-all duration-300 relative">
+        <!-- Added text-rendering to ensure fidelity -->
+        <div id="capture-target" class="bg-white shadow-2xl origin-top transition-all duration-300 relative" style="text-rendering: geometricPrecision; -webkit-font-smoothing: antialiased;">
             <!-- Content Injected Here -->
             
             <!-- CROP LAYER -->
@@ -200,7 +201,7 @@
             <div>
                 <div class="flex justify-between mb-1">
                     <label class="text-xs font-bold text-slate-500 uppercase">Zoom</label>
-                    <!-- DEFAULT ZOOM 2.0x (1920 * 2 = 3840px = 4K) -->
+                    <!-- DEFAULT ZOOM 2.0x -->
                     <span class="text-xs font-bold text-pink-600" id="zoomValue">2.0x</span>
                 </div>
                 <input id="zoomRange" type="range" min="1" max="10" value="2.0" step="0.1" class="w-full touch-none">
@@ -424,7 +425,6 @@
             cropToolbar.style.display = 'none';
         };
         
-        // Helper to get coordinates from Mouse or Touch events
         const getCoords = (e) => {
             const rect = cropOverlay.getBoundingClientRect();
             let clientX, clientY;
@@ -444,7 +444,7 @@
         };
 
         const handleStart = (e) => {
-            if (e.cancelable) e.preventDefault(); // Prevent scrolling on touch
+            if (e.cancelable) e.preventDefault(); 
             isDrawing = true;
             const coords = getCoords(e);
             startX = coords.x;
@@ -459,7 +459,7 @@
 
         const handleMove = (e) => {
             if (!isDrawing) return;
-            if (e.cancelable) e.preventDefault(); // Prevent scrolling
+            if (e.cancelable) e.preventDefault(); 
             
             const coords = getCoords(e);
             const width = coords.x - startX;
@@ -482,12 +482,10 @@
             isDrawing = false;
         };
 
-        // Mouse Listeners
         cropOverlay.addEventListener('mousedown', handleStart);
         cropOverlay.addEventListener('mousemove', handleMove);
         cropOverlay.addEventListener('mouseup', handleEnd);
 
-        // Touch Listeners (Mobile Support)
         cropOverlay.addEventListener('touchstart', handleStart, { passive: false });
         cropOverlay.addEventListener('touchmove', handleMove, { passive: false });
         cropOverlay.addEventListener('touchend', handleEnd);
@@ -508,15 +506,28 @@
             setTimeout(() => {
                 const scale = parseFloat(zoomRange.value);
                 
+                // --- COORDINATE FIX FOR CROP ---
+                // Calculate the global document coordinates for the crop box
+                // This accounts for scroll position and element position
+                const targetRect = captureTarget.getBoundingClientRect();
+                const globalX = targetRect.left + window.scrollX + cropRect.x;
+                const globalY = targetRect.top + window.scrollY + cropRect.y;
+
                 html2canvas(captureTarget, {
                     scale: scale,
-                    x: cropRect.x,
-                    y: cropRect.y,
+                    // Use calculated global coordinates
+                    x: globalX,
+                    y: globalY,
                     width: cropRect.w,
                     height: cropRect.h,
                     backgroundColor: '#ffffff', 
                     useCORS: true,
                     logging: false,
+                    // Force scroll reset to ensure alignment during render
+                    scrollY: -window.scrollY,
+                    scrollX: -window.scrollX,
+                    windowWidth: document.documentElement.offsetWidth,
+                    windowHeight: document.documentElement.offsetHeight
                 }).then(canvas => {
                     const link = document.createElement('a');
                     link.download = `cropped-capture-${Date.now()}.jpg`;
