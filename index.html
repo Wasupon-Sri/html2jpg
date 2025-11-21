@@ -524,7 +524,7 @@
             setTimeout(() => {
                 const scale = parseFloat(zoomRange.value);
                 
-                // 1. Calculate Cropping Coordinates relative to the Element's Top-Left
+                // 1. Calculate Coordinates
                 const rect = captureTarget.getBoundingClientRect();
                 const ratioX = captureTarget.offsetWidth / rect.width;
                 const ratioY = captureTarget.offsetHeight / rect.height;
@@ -534,42 +534,47 @@
                 const domCropW = cropRect.w * ratioX;
                 const domCropH = cropRect.h * ratioY;
 
-                // 2. CLONE STRATEGY
+                // 2. Clone Strategy
                 const clone = captureTarget.cloneNode(true);
                 
-                // 3. Style the clone
-                // Use absolute positioning to ensure it can render full height regardless of viewport
-                clone.style.position = 'absolute'; 
+                // 3. Style the Clone
+                clone.style.position = 'absolute';
                 clone.style.top = '0';
-                clone.style.left = '0'; 
-                clone.style.zIndex = '-10000'; // Hide deep below
-                clone.style.width = captureTarget.offsetWidth + 'px'; // Match width exactly
-                clone.style.height = 'auto'; // Let height flow naturally
+                clone.style.left = '0';
+                clone.style.zIndex = '-10000';
+                clone.style.width = captureTarget.offsetWidth + 'px';
+                
+                // FIX: Add "overflow: hidden" to force margin containment (BFC)
+                clone.style.overflow = 'hidden'; 
+                
+                clone.style.height = 'auto'; 
                 clone.style.transform = 'none';
                 clone.style.transition = 'none';
                 clone.style.margin = '0';
-                clone.style.overflow = 'visible'; // Force visibility
                 
-                // Remove crop overlay from clone if it got copied
+                // Explicitly inherit color to prevent transparency issues
+                const computedStyle = window.getComputedStyle(captureTarget);
+                clone.style.color = computedStyle.color;
+
                 const cloneOverlay = clone.querySelector('#crop-overlay');
                 if(cloneOverlay) cloneOverlay.remove();
 
+                // Append to body to ensure full render context
                 document.body.appendChild(clone);
 
-                // 4. Capture the Clone
+                // 4. Capture
                 html2canvas(clone, {
                     scale: scale,
-                    backgroundColor: null, 
+                    backgroundColor: '#ffffff', // Force white background
                     useCORS: true,
                     logging: false,
-                    scrollY: 0,
+                    scrollY: 0, 
                     scrollX: 0,
-                    windowWidth: document.documentElement.scrollWidth, // Capture full dimensions
-                    windowHeight: document.documentElement.scrollHeight,
+                    // Ensure windowHeight is large enough to include everything
+                    windowHeight: clone.scrollHeight + 100,
+                    windowWidth: clone.scrollWidth,
                     onclone: (clonedDoc) => {
                         const style = clonedDoc.createElement('style');
-                        // --- CRITICAL FIX: FORCE VISIBILITY ---
-                        // Ensures elements with initial opacity:0 (fade-ins) are visible
                         style.innerHTML = `
                             * { 
                                 animation: none !important; 
@@ -581,9 +586,9 @@
                         clonedDoc.head.appendChild(style);
                     }
                 }).then(fullCanvas => {
-                    document.body.removeChild(clone); // Clean up
+                    document.body.removeChild(clone); 
 
-                    // 5. Crop the specific region
+                    // 5. Crop
                     const cropCanvas = document.createElement('canvas');
                     cropCanvas.width = domCropW * scale;
                     cropCanvas.height = domCropH * scale;
@@ -595,7 +600,6 @@
                     const sw = domCropW * scale;
                     const sh = domCropH * scale;
 
-                    // Safety check to prevent drawing out of bounds
                     if (sx >= 0 && sy >= 0) {
                          ctx.drawImage(fullCanvas, sx, sy, sw, sh, 0, 0, cropCanvas.width, cropCanvas.height);
                     } else {
@@ -684,20 +688,25 @@
             setTimeout(() => {
                 const scale = parseFloat(zoomRange.value);
                 
-                // Full Capture using same Clone Strategy
+                // Full Capture
                 const clone = captureTarget.cloneNode(true);
                 clone.style.position = 'absolute';
                 clone.style.top = '0';
                 clone.style.left = '0';
                 clone.style.zIndex = '-10000';
                 clone.style.width = captureTarget.offsetWidth + 'px';
+                
+                // FIX: Force margin containment (BFC) here too
+                clone.style.overflow = 'hidden';
+                
                 clone.style.height = 'auto';
                 clone.style.transform = 'none';
                 clone.style.transition = 'none';
                 clone.style.margin = '0';
-                clone.style.overflow = 'visible';
                 
-                // Remove overlay from clone
+                const computedStyle = window.getComputedStyle(captureTarget);
+                clone.style.color = computedStyle.color;
+                
                 const cloneOverlay = clone.querySelector('#crop-overlay');
                 if(cloneOverlay) cloneOverlay.remove();
 
@@ -705,13 +714,14 @@
 
                 html2canvas(clone, {
                     scale: scale,
-                    backgroundColor: '#ffffff', // Default to white for full capture
+                    backgroundColor: '#ffffff',
                     useCORS: true,
                     logging: false,
                     scrollY: 0,
                     scrollX: 0,
-                    windowWidth: document.documentElement.scrollWidth,
-                    windowHeight: document.documentElement.scrollHeight,
+                    // Ensure windowHeight is large enough
+                    windowHeight: clone.scrollHeight + 100,
+                    windowWidth: clone.scrollWidth,
                     onclone: (clonedDoc) => {
                         const style = clonedDoc.createElement('style');
                         style.innerHTML = `
