@@ -1,294 +1,261 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>HTML → JPG Converter</title>
-  <!-- html2canvas -->
-  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
-  <!-- Google Font -->
-  <link rel="preconnect" href="https://fonts.gstatic.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" 
-        rel="stylesheet">
-  <style>
-    :root {
-      --primary:    #4f46e5;
-      --accent:     #6366f1;
-      --bg:         #f5f7fa;
-      --surface:    #ffffff;
-      --shadow:     rgba(0, 0, 0, 0.1);
-      --text-high:  #1f2937;
-      --text-med:   #4b5563;
-      --radius:     8px;
-    }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: 'Inter', sans-serif;
-      background: var(--bg);
-      color: var(--text-high);
-      line-height: 1.6;
-    }
-    .container {
-      max-width: 800px;
-      margin: 2rem auto;
-      padding: 0 1rem;
-    }
-    .card {
-      background: var(--surface);
-      border-radius: var(--radius);
-      box-shadow: 0 4px 16px var(--shadow);
-      padding: 2rem;
-    }
-    .card h1 {
-      text-align: center;
-      color: var(--primary);
-      font-size: 1.75rem;
-      font-weight: 600;
-    }
-    .form-group {
-      margin-top: 1.5rem;
-      display: flex;
-      flex-direction: column;
-    }
-    .form-group label {
-      font-weight: 500;
-      margin-bottom: 0.5rem;
-      color: var(--text-med);
-    }
-    .form-group input[type="number"],
-    .form-group textarea,
-    .form-group input[type="range"] {
-      font-size: 1rem;
-      padding: 0.75rem 1rem;
-      border: 1px solid #d1d5db;
-      border-radius: var(--radius);
-      background: #f9fafb;
-      transition: border-color 0.2s;
-      width: 100%;
-    }
-    .form-group input[type="number"]:focus,
-    .form-group textarea:focus,
-    .form-group input[type="range"]:focus {
-      outline: none;
-      border-color: var(--accent);
-    }
-    .form-group textarea {
-      resize: vertical;
-      height: 150px;
-      font-family: monospace;
-    }
-    /* Custom file‐upload button */
-    .file-upload {
-      position: relative;
-      display: inline-block;
-      width: 100%;
-    }
-    .file-upload button {
-      width: 100%;
-      padding: 0.75rem 1rem;
-      font-size: 1rem;
-      font-weight: 500;
-      color: #fff;
-      background: var(--primary);
-      border: none;
-      border-radius: var(--radius);
-      cursor: pointer;
-      transition: background 0.2s, transform 0.1s;
-    }
-    .file-upload button:hover {
-      background: var(--accent);
-      transform: translateY(-1px);
-    }
-    .file-upload button:active {
-      transform: translateY(1px);
-    }
-    .file-upload input[type="file"] {
-      position: absolute;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      opacity: 0;
-      cursor: pointer;
-    }
-    .file-upload .file-name {
-      margin-top: 0.5rem;
-      font-size: 0.9rem;
-      color: var(--text-med);
-      word-break: break-all;
-    }
-    /* Slider styling */
-    input[type="range"] {
-      -webkit-appearance: none;
-      background: #e5e7eb;
-      height: 8px;
-      border-radius: 4px;
-    }
-    input[type="range"]::-webkit-slider-thumb {
-      -webkit-appearance: none;
-      width: 20px; height: 20px;
-      background: var(--primary);
-      border: 2px solid #fff;
-      border-radius: 50%;
-      box-shadow: 0 2px 4px var(--shadow);
-      margin-top: -6px;
-      transition: background 0.2s;
-    }
-    input[type="range"]::-webkit-slider-thumb:hover {
-      background: var(--accent);
-    }
-    input[type="range"]::-moz-range-thumb {
-      width: 20px; height: 20px;
-      background: var(--primary);
-      border: none;
-      border-radius: 50%;
-    }
-    /* Generate button (updated) */
-    #generateBtn {
-      margin-top: 2rem;
-      width: 100%;
-      padding: 0.75rem;
-      font-size: 1rem;
-      font-weight: 500;
-      color: #fff;
-      background: var(--primary);
-      border: none;
-      border-radius: var(--radius);
-      cursor: pointer;
-      transition: background 0.2s ease, transform 0.2s ease;
-    }
-    #generateBtn:hover {
-      background: var(--accent);
-      transform: scale(1.03);
-    }
-    #generateBtn:active {
-      transform: scale(0.97);
-    }
-    #generateBtn:disabled {
-      background: #a5b4fc;
-      cursor: not-allowed;
-      transform: none;
-    }
-    /* Hidden preview pane */
-    #preview {
-      position: absolute;
-      top: -9999px;
-      left: -9999px;
-      background: #fff;
-      padding: 1rem;
-      border: 1px solid #d1d5db;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HTML to High-Res JPG Converter</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- html2canvas Library for rendering DOM to Image -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #888; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #555; 
+        }
+
+        /* Preview Container Isolation */
+        #preview-wrapper {
+            background-image: 
+                linear-gradient(45deg, #e5e7eb 25%, transparent 25%), 
+                linear-gradient(-45deg, #e5e7eb 25%, transparent 25%), 
+                linear-gradient(45deg, transparent 75%, #e5e7eb 75%), 
+                linear-gradient(-45deg, transparent 75%, #e5e7eb 75%);
+            background-size: 20px 20px;
+            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+        }
+        
+        /* Ensure the capture target has a white background by default if not specified in HTML */
+        #capture-target {
+            background-color: white; 
+            min-height: 200px;
+            overflow: hidden; /* Prevent margin collapse issues */
+        }
+    </style>
 </head>
-<body>
+<body class="bg-gray-100 min-h-screen font-sans text-gray-800 p-4 md:p-8">
 
-  <div class="container">
-    <div class="card">
-      <h1>HTML to JPG Converter</h1>
+    <div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <!-- LEFT PANEL: Controls & Input -->
+        <div class="lg:col-span-4 flex flex-col gap-6">
+            
+            <!-- Header -->
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                <h1 class="text-2xl font-bold text-indigo-600 mb-2 flex items-center gap-2">
+                    <i class="fa-solid fa-image"></i> HTML to JPG
+                </h1>
+                <p class="text-sm text-gray-500">High-resolution converter (2K+ Ready)</p>
+            </div>
 
-      <div class="form-group file-upload">
-        <label>Load HTML File</label>
-        <button type="button">📂 Choose File</button>
-        <input type="file" id="fileInput" accept=".html,text/html">
-        <div class="file-name" id="fileName">No file chosen</div>
-      </div>
+            <!-- Controls -->
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 space-y-6">
+                
+                <!-- File Upload -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Load HTML File (Optional)</label>
+                    <label class="flex items-center justify-center w-full h-12 px-4 transition bg-indigo-50 border-2 border-indigo-100 border-dashed rounded-lg appearance-none cursor-pointer hover:border-indigo-300 focus:outline-none">
+                        <span class="flex items-center space-x-2">
+                            <i class="fa-solid fa-folder-open text-indigo-500"></i>
+                            <span class="text-indigo-600 font-medium text-sm">Choose File</span>
+                        </span>
+                        <input type="file" id="fileInput" class="hidden" accept=".html, .txt">
+                    </label>
+                </div>
 
-      <div class="form-group">
-        <label for="widthInput">
-          Output Width: <strong><span id="widthValue">1042</span> px</strong>
-        </label>
-        <input type="range" id="widthInput" min="100" max="5000" step="10" value="1042">
-      </div>
+                <hr class="border-gray-100">
 
-      <div class="form-group">
-        <label for="scaleInput">
-          Zoom Factor: <strong><span id="scaleValue">7.0</span>x</strong>
-        </label>
-        <input type="range" id="scaleInput" min="1" max="20" step="0.1" value="7">
-      </div>
+                <!-- Width Control -->
+                <div>
+                    <div class="flex justify-between mb-2">
+                        <label for="widthRange" class="text-sm font-medium text-gray-700">Output Width</label>
+                        <span class="text-sm font-bold text-indigo-600" id="widthValue">1560 px</span>
+                    </div>
+                    <input id="widthRange" type="range" min="300" max="3000" value="1560" step="10" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-600">
+                </div>
 
-      <div class="form-group">
-        <label for="htmlInput">Paste HTML Code</label>
-        <textarea id="htmlInput" placeholder="<h1>Hello World</h1>"></textarea>
-      </div>
+                <!-- Zoom Control -->
+                <div>
+                    <div class="flex justify-between mb-2">
+                        <label for="zoomRange" class="text-sm font-medium text-gray-700">Zoom Factor (Quality)</label>
+                        <span class="text-sm font-bold text-indigo-600" id="zoomValue">5.6x</span>
+                    </div>
+                    <input id="zoomRange" type="range" min="1" max="10" value="5.6" step="0.1" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-600">
+                    <p class="text-xs text-gray-400 mt-1">Higher zoom = Larger resolution (2K/4K/8K)</p>
+                </div>
 
-      <button id="generateBtn">🚀 Generate JPG</button>
+            </div>
+
+            <!-- Code Input -->
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 flex-grow flex flex-col">
+                <div class="flex justify-between items-center mb-2">
+                    <label class="block text-sm font-medium text-gray-700">Paste HTML Code</label>
+                    <button id="clearBtn" class="text-xs text-red-500 hover:text-red-700 font-medium hover:underline transition-colors flex items-center" title="Clear all code">
+                        <i class="fa-solid fa-trash-can mr-1"></i> Clear Code
+                    </button>
+                </div>
+                <textarea id="htmlInput" class="w-full flex-grow p-3 bg-gray-50 border border-gray-200 rounded-lg font-mono text-xs text-gray-600 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none resize-none h-64" placeholder="<div>Paste your code here...</div>"></textarea>
+            </div>
+
+            <!-- Action Button -->
+            <button id="generateBtn" class="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-lg transform transition hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-2">
+                <i class="fa-solid fa-rocket"></i> Generate JPG
+            </button>
+
+        </div>
+
+        <!-- RIGHT PANEL: Preview -->
+        <div class="lg:col-span-8 flex flex-col gap-4">
+            <div class="flex justify-between items-center">
+                <h2 class="text-lg font-semibold text-gray-700">Live Preview</h2>
+                <span class="text-xs bg-gray-200 text-gray-600 px-2 py-1 rounded">Scale: Fit to Screen</span>
+            </div>
+            
+            <!-- Preview Wrapper (Scrollable) -->
+            <div id="preview-wrapper" class="flex-grow border border-gray-300 rounded-xl overflow-auto shadow-inner relative h-[600px] lg:h-auto p-4 flex items-start justify-center">
+                <!-- The Actual Element to Capture -->
+                <!-- We use transform-origin top left and scale via JS for visual preview fit if needed, 
+                     but mainly we just let it overflow with scrollbars for accuracy -->
+                <div id="capture-target" class="shadow-2xl">
+                    <!-- Content injected here -->
+                </div>
+            </div>
+        </div>
+
     </div>
-  </div>
 
-  <!-- Off-screen preview element -->
-  <div id="preview"></div>
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50 backdrop-blur-sm">
+        <div class="bg-white p-6 rounded-lg shadow-xl flex flex-col items-center">
+            <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600 mb-4"></div>
+            <p class="text-gray-700 font-medium">Rendering High-Res Image...</p>
+            <p class="text-xs text-gray-500 mt-1">Please wait, this may take a few seconds.</p>
+        </div>
+    </div>
 
-  <script>
-    const fileInput   = document.getElementById('fileInput');
-    const fileNameEl  = document.getElementById('fileName');
-    const chooseBtn   = document.querySelector('.file-upload button');
-    const widthInput  = document.getElementById('widthInput');
-    const widthValue  = document.getElementById('widthValue');
-    const scaleInput  = document.getElementById('scaleInput');
-    const scaleValue  = document.getElementById('scaleValue');
-    const htmlInput   = document.getElementById('htmlInput');
-    const generateBtn = document.getElementById('generateBtn');
-    const preview     = document.getElementById('preview');
+    <script>
+        // DOM Elements
+        const widthRange = document.getElementById('widthRange');
+        const widthValue = document.getElementById('widthValue');
+        const zoomRange = document.getElementById('zoomRange');
+        const zoomValue = document.getElementById('zoomValue');
+        const htmlInput = document.getElementById('htmlInput');
+        const fileInput = document.getElementById('fileInput');
+        const clearBtn = document.getElementById('clearBtn');
+        const captureTarget = document.getElementById('capture-target');
+        const generateBtn = document.getElementById('generateBtn');
+        const loadingOverlay = document.getElementById('loadingOverlay');
 
-    // Custom file‐upload button
-    chooseBtn.addEventListener('click', () => fileInput.click());
-    fileInput.addEventListener('change', e => {
-      const file = e.target.files[0];
-      if (file) {
-        fileNameEl.textContent = file.name;
-        const reader = new FileReader();
-        reader.onload = evt => htmlInput.value = evt.target.result;
-        reader.readAsText(file);
-      } else {
-        fileNameEl.textContent = 'No file chosen';
-      }
-    });
+        // Default Sample HTML
+        const defaultHTML = `
+<div style="font-family: 'Segoe UI', sans-serif; padding: 40px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;">
+    <div style="background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); padding: 60px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.2); box-shadow: 0 20px 50px rgba(0,0,0,0.3);">
+        <h1 style="font-size: 4rem; margin: 0; text-shadow: 2px 2px 4px rgba(0,0,0,0.2);">Hello World</h1>
+        <p style="font-size: 1.5rem; margin-top: 20px; opacity: 0.9;">This is a high-resolution HTML render.</p>
+        <div style="margin-top: 40px; display: flex; gap: 20px; justify-content: center;">
+            <span style="background: white; color: #764ba2; padding: 10px 20px; border-radius: 50px; font-weight: bold;">1560px Width</span>
+            <span style="background: white; color: #764ba2; padding: 10px 20px; border-radius: 50px; font-weight: bold;">5.6x Zoom</span>
+        </div>
+    </div>
+</div>`;
 
-    // Sync sliders with labels
-    widthInput.addEventListener('input', () => {
-      widthValue.textContent = widthInput.value;
-    });
-    scaleInput.addEventListener('input', () => {
-      scaleValue.textContent = parseFloat(scaleInput.value).toFixed(1);
-    });
+        // Initialize
+        htmlInput.value = defaultHTML;
+        
+        // Update Preview Function
+        const updatePreview = () => {
+            const width = widthRange.value;
+            captureTarget.style.width = `${width}px`;
+            captureTarget.innerHTML = htmlInput.value;
+        };
 
-    generateBtn.addEventListener('click', () => {
-      generateBtn.disabled = true;
-      generateBtn.textContent = '⏳ Generating...';
+        // Initial Update
+        updatePreview();
 
-      preview.innerHTML = htmlInput.value;
-      const targetWidth = parseInt(widthInput.value, 10) || 1042;
-      const scaleFactor = parseFloat(scaleInput.value) || 7;
-      preview.style.width = `${targetWidth}px`;
+        // Event Listeners for Controls
+        widthRange.addEventListener('input', (e) => {
+            widthValue.innerText = `${e.target.value} px`;
+            updatePreview();
+        });
 
-      html2canvas(preview, {
-        width:  targetWidth,
-        scale:  scaleFactor,
-        useCORS: true,
-        allowTaint: false
-      })
-      .then(canvas => {
-        canvas.toBlob(blob => {
-          const link = document.createElement('a');
-          const scaleLabel = `${scaleFactor % 1 === 0
-                                ? scaleFactor.toFixed(0)
-                                : scaleFactor.toFixed(1)}x`;
-          link.download = `capture_${targetWidth}px_${scaleLabel}.jpg`;
-          link.href = URL.createObjectURL(blob);
-          link.click();
-          URL.revokeObjectURL(link.href);
+        zoomRange.addEventListener('input', (e) => {
+            zoomValue.innerText = `${e.target.value}x`;
+        });
 
-          generateBtn.disabled = false;
-          setTimeout(() => {
-            generateBtn.textContent = '🚀 Generate JPG';
-          }, 300);
-        }, 'image/jpeg', 1.0);
-      })
-      .catch(err => {
-        console.error(err);
-        alert('Error generating image. See console for details.');
-        generateBtn.disabled = false;
-        generateBtn.textContent = '🚀 Generate JPG';
-      });
-    });
-  </script>
+        // Debounce Input for Performance
+        let timeout;
+        htmlInput.addEventListener('input', () => {
+            clearTimeout(timeout);
+            timeout = setTimeout(updatePreview, 500);
+        });
+        
+        // Clear Button Handler
+        clearBtn.addEventListener('click', () => {
+            htmlInput.value = '';
+            updatePreview();
+            htmlInput.focus();
+        });
+
+        // File Input Handler
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    htmlInput.value = event.target.result;
+                    updatePreview();
+                };
+                reader.readAsText(file);
+            }
+        });
+
+        // Generate JPG Function
+        generateBtn.addEventListener('click', () => {
+            loadingOverlay.classList.remove('hidden');
+            loadingOverlay.classList.add('flex');
+
+            // Small delay to allow UI to update (show loader)
+            setTimeout(() => {
+                const width = parseInt(widthRange.value);
+                const scale = parseFloat(zoomRange.value);
+
+                html2canvas(captureTarget, {
+                    scale: scale, // The key parameter for resolution
+                    width: width,
+                    backgroundColor: null, // Transparent background handling if needed, though JPG doesn't support transparency
+                    useCORS: true, // Try to load images from other domains
+                    logging: false
+                }).then(canvas => {
+                    // Create download link
+                    const link = document.createElement('a');
+                    link.download = `html-render-${Date.now()}.jpg`;
+                    link.href = canvas.toDataURL('image/jpeg', 0.9); // 0.9 Quality
+                    link.click();
+
+                    // Hide loader
+                    loadingOverlay.classList.add('hidden');
+                    loadingOverlay.classList.remove('flex');
+                }).catch(err => {
+                    console.error(err);
+                    alert("An error occurred while generating the image. Check console for details.");
+                    loadingOverlay.classList.add('hidden');
+                    loadingOverlay.classList.remove('flex');
+                });
+            }, 100);
+        });
+
+    </script>
 </body>
 </html>
