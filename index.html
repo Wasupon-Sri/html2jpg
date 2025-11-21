@@ -2,16 +2,23 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ColorPop HTML Converter</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crop Me! - Aurora Edition</title>
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Outfit:wght@300;400;600;800&family=Sarabun:wght@300;400;600;800&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- html2canvas -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    
     <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-    
+
+    <!-- html-to-image Engine -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.11/html-to-image.min.js"></script>
+
     <script>
         tailwind.config = {
             theme: {
@@ -19,10 +26,19 @@
                     fontFamily: {
                         sans: ['Outfit', 'sans-serif'],
                         mono: ['JetBrains Mono', 'monospace'],
+                        thai: ['Sarabun', 'sans-serif'],
                     },
                     colors: {
-                        primary: "#6366f1",
-                        secondary: "#ec4899",
+                        accent: '#FF00FF', 
+                    },
+                    animation: {
+                        'bounce-in': 'bounceIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards',
+                    },
+                    keyframes: {
+                        bounceIn: {
+                            '0%': { opacity: '0', transform: 'translate(-50%, -20px) scale(0.9)' },
+                            '100%': { opacity: '1', transform: 'translate(-50%, 0) scale(1)' },
+                        }
                     }
                 }
             }
@@ -30,731 +46,679 @@
     </script>
 
     <style>
-        /* Faster Animated Background */
+        /* --- AURORA BACKGROUND --- */
         body {
-            background: linear-gradient(-45deg, #ff00cc, #333399, #00ccff, #00ff99, #ffff00, #ff0000);
-            background-size: 600% 600%;
-            animation: gradientBG 6s ease infinite;
-            overflow: hidden; /* Prevent body scroll */
-            touch-action: none; /* Improve touch handling */
+            background: linear-gradient(125deg, #ff0080, #7928ca, #41d1ff, #ffea00, #ff0080);
+            background-size: 400% 400%;
+            animation: aurora 20s ease infinite;
+            overflow: hidden; 
         }
 
-        @keyframes gradientBG {
+        @keyframes aurora {
             0% { background-position: 0% 50%; }
             50% { background-position: 100% 50%; }
             100% { background-position: 0% 50%; }
         }
 
-        /* Fixed Glass Card */
-        .glass-card {
-            background: rgba(255, 255, 255, 0.95); 
+        /* --- GLASSMORPHISM --- */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.65);
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.6);
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
-            transition: all 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
         }
 
-        /* Range Slider */
-        input[type=range] {
-            -webkit-appearance: none; 
-            background: transparent; 
+        /* --- CHECKERBOARD PATTERN --- */
+        .checkerboard {
+            background-color: #e5e5f7;
+            opacity: 1;
+            background-image:  linear-gradient(45deg, #d4d4e8 25%, transparent 25%), linear-gradient(-45deg, #d4d4e8 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #d4d4e8 75%), linear-gradient(-45deg, transparent 75%, #d4d4e8 75%);
+            background-size: 20px 20px;
+            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
         }
+
+        /* --- JUICY SLIDERS --- */
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+        
         input[type=range]::-webkit-slider-thumb {
             -webkit-appearance: none;
             height: 20px;
             width: 20px;
             border-radius: 50%;
-            background: white;
-            border: 3px solid #6366f1;
+            background: #FF0080;
             cursor: pointer;
             margin-top: -8px; 
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            box-shadow: 0 0 10px rgba(255, 0, 128, 0.5);
+            transition: transform 0.1s;
         }
+
+        input[type=range]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+        }
+
         input[type=range]::-webkit-slider-runnable-track {
             width: 100%;
-            height: 4px;
+            height: 6px;
             cursor: pointer;
-            background: linear-gradient(to right, #6366f1, #ec4899);
+            background: rgba(0,0,0,0.1);
+            border-radius: 999px;
+        }
+
+        /* --- SCROLLBARS --- */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(0,0,0,0.2);
             border-radius: 10px;
         }
 
-        /* Canvas Background */
-        .checkerboard {
-            background-color: #ffffff;
-            background-image: 
-                linear-gradient(45deg, #f0f0f0 25%, transparent 25%), 
-                linear-gradient(-45deg, #f0f0f0 25%, transparent 25%), 
-                linear-gradient(45deg, transparent 75%, #f0f0f0 75%), 
-                linear-gradient(-45deg, transparent 75%, #f0f0f0 75%);
-            background-size: 24px 24px;
-            background-position: 0 0, 0 12px, 12px -12px, -12px 0px;
-        }
-
-        .custom-scroll::-webkit-scrollbar { width: 4px; }
-        .custom-scroll::-webkit-scrollbar-track { background: rgba(0,0,0,0.05); }
-        .custom-scroll::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.2); border-radius: 4px; }
-
-        /* --- Crop Styles --- */
+        /* --- CROP OVERLAY --- */
         #crop-overlay {
-            position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0,0,0,0.5);
-            z-index: 9999;
             cursor: crosshair;
-            display: none; 
-            touch-action: none; 
         }
-        
-        #crop-box {
-            position: absolute;
+        .crop-selection {
             border: 2px dashed #fff;
-            box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5);
+            background: rgba(255, 255, 255, 0.2);
+            box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.6);
+            position: absolute;
             pointer-events: none; 
+            z-index: 50;
         }
 
-        #crop-toolbar {
-            position: fixed;
-            bottom: 30px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: white;
-            padding: 10px 20px;
-            border-radius: 50px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-            display: none;
-            gap: 10px;
-            z-index: 10000;
-            animation: slideUp 0.3s ease;
-            width: max-content;
-            max-width: 90vw;
-            justify-content: center;
-        }
-
-        @keyframes slideUp {
-            from { transform: translate(-50%, 20px); opacity: 0; }
-            to { transform: translate(-50%, 0); opacity: 1; }
-        }
-
-        .panel-collapsed {
-            height: 60px !important;
-            overflow: hidden;
+        /* --- SAFE MODE LOGIC (CRITICAL) --- */
+        /* Safe Mode enforces solid backgrounds and readable text colors 
+           for standard export, removing glass effects which often 
+           render poorly in static images or PDF readers.
+        */
+        #capture-wrapper.safe-mode * {
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
         }
         
-        @media (max-height: 500px) {
-            #settingsPanel {
-                max-height: calc(100vh - 10px);
-            }
-            .panel-body {
-                padding-bottom: 50px; 
-            }
+        /* Force glass backgrounds to solid white */
+        #capture-wrapper.safe-mode .glass-effect,
+        #capture-wrapper.safe-mode [class*="bg-white/"],
+        #capture-wrapper.safe-mode [class*="backdrop-blur"] {
+            background-color: #ffffff !important;
+            background-image: none !important;
+            border: 1px solid #e2e8f0 !important;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
+            opacity: 1 !important;
+        }
+
+        /* Force gradient/transparent text to dark slate */
+        #capture-wrapper.safe-mode .gradient-text,
+        #capture-wrapper.safe-mode [class*="text-transparent"],
+        #capture-wrapper.safe-mode [class*="bg-clip-text"] {
+            color: #1e293b !important; 
+            background: none !important;
+            -webkit-text-fill-color: #1e293b !important;
+            background-clip: border-box !important;
+            -webkit-background-clip: border-box !important;
+        }
+
+        /* Force white text on previously glass (now white) backgrounds to dark slate */
+        #capture-wrapper.safe-mode .glass-effect .text-white,
+        #capture-wrapper.safe-mode [class*="bg-white/"] .text-white,
+        #capture-wrapper.safe-mode [class*="backdrop-blur"] .text-white,
+        #capture-wrapper.safe-mode [class*="bg-white/"] [class*="text-white"],
+        #capture-wrapper.safe-mode [class*="backdrop-blur"] [class*="text-white"],
+        #capture-wrapper.safe-mode [class*="bg-white/"] *[style*="color: white"],
+        #capture-wrapper.safe-mode [class*="bg-white/"] *[style*="color: #fff"],
+        #capture-wrapper.safe-mode [class*="bg-white/"] *[style*="color: rgb(255, 255, 255)"] {
+            color: #1e293b !important;
         }
     </style>
 </head>
-<body class="text-slate-800 font-sans h-screen w-screen overflow-hidden relative">
+<body class="h-screen w-screen flex flex-col relative text-gray-800">
 
-    <!-- PREVIEW AREA -->
-    <div id="preview-wrapper" class="checkerboard w-full h-full overflow-auto flex items-start justify-center p-4 pt-20 lg:p-20 lg:pl-[360px] relative z-0 transition-all">
-        <!-- The Capture Target -->
-        <!-- Added text-rendering and display properties for better fitting -->
-        <div id="capture-target" class="bg-white shadow-2xl origin-top transition-all duration-300 relative" style="text-rendering: geometricPrecision; -webkit-font-smoothing: antialiased;">
-            <!-- Content Injected Here -->
-            
-            <!-- CROP LAYER -->
-            <div id="crop-overlay">
-                <div id="crop-box"></div>
-            </div>
-        </div>
-    </div>
-
-    <!-- FIXED SETTINGS PANEL -->
-    <div id="settingsPanel" class="glass-card fixed top-4 left-4 w-[calc(100vw-32px)] sm:w-[320px] max-h-[calc(100vh-32px)] rounded-3xl z-50 flex flex-col transition-all duration-300">
+    <!-- Main Workspace -->
+    <div class="flex-1 relative overflow-hidden flex">
         
-        <!-- Header -->
-        <div class="bg-white/50 p-4 flex justify-between items-center border-b border-white/50 select-none shrink-0" id="panelHeader">
-            <h2 class="text-sm font-bold text-slate-700 flex items-center gap-2">
-                <i class="fa-solid fa-sliders text-pink-500"></i> Settings
-            </h2>
-            <div class="flex items-center gap-2">
-                <button id="togglePanelBtn" class="w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 transition">
-                    <i class="fa-solid fa-chevron-up transition-transform" id="toggleIcon"></i>
-                </button>
-            </div>
-        </div>
-
-        <!-- Content (Collapsible) -->
-        <div class="flex-grow overflow-y-auto custom-scroll p-5 flex flex-col gap-5 panel-body">
+        <!-- Canvas Area (Scrollable) -->
+        <div id="canvas-scroller" class="flex-1 h-full overflow-auto checkerboard relative flex items-start justify-start p-8 md:p-20 transition-all">
             
-            <!-- Width & Auto-Fit -->
-            <div>
-                <div class="flex justify-between items-center mb-1">
-                    <label class="text-xs font-bold text-slate-500 uppercase">Width</label>
-                    <div class="flex items-center gap-2">
-                         <button id="autoFitBtn" class="text-[10px] bg-indigo-100 hover:bg-indigo-200 text-indigo-700 px-2 py-0.5 rounded font-bold transition flex items-center gap-1">
-                            <i class="fa-solid fa-compress"></i> Auto-Fit
-                        </button>
-                        <span class="text-xs font-bold text-indigo-600" id="widthValue">1920 px</span>
-                    </div>
+            <!-- The Capture Target Wrapper -->
+            <div id="capture-wrapper" class="bg-white shadow-2xl relative transition-all duration-300 origin-top-left group mx-auto" style="width: 960px; min-height: 600px;">
+                <!-- User Content Goes Here -->
+                <div id="user-content" class="w-full h-full min-h-[600px]">
+                    <!-- Content injected via JS -->
                 </div>
-                <input id="widthRange" type="range" min="300" max="3000" value="1920" step="10" class="w-full touch-none">
-            </div>
-
-            <!-- Zoom -->
-            <div>
-                <div class="flex justify-between mb-1">
-                    <label class="text-xs font-bold text-slate-500 uppercase">Zoom</label>
-                    <span class="text-xs font-bold text-pink-600" id="zoomValue">2.0x</span>
-                </div>
-                <input id="zoomRange" type="range" min="1" max="10" value="2.0" step="0.1" class="w-full touch-none">
-            </div>
-
-            <!-- Resolution Badge -->
-            <div class="bg-white/60 p-3 rounded-xl border border-white/50 flex justify-between items-center">
-                <div class="flex flex-col">
-                    <span class="text-[10px] font-bold text-slate-400">OUTPUT SIZE</span>
-                    <span class="text-sm font-bold font-mono text-slate-700" id="finalWidthDisp">--</span>
-                </div>
-                <div id="qualityBadge" class="px-2 py-1 rounded text-[10px] font-bold bg-indigo-100 text-indigo-600">HQ</div>
-            </div>
-
-            <!-- Controls -->
-            <div class="flex items-center justify-between">
-                <span class="text-xs font-bold text-slate-600">Center Content</span>
-                <label class="relative inline-flex items-center cursor-pointer">
-                    <input type="checkbox" id="centerToggle" class="sr-only peer">
-                    <div class="w-9 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-orange-500 shadow-inner"></div>
-                </label>
-            </div>
-
-            <hr class="border-slate-200/50">
-
-            <!-- Actions -->
-            <div class="grid grid-cols-2 gap-2">
-                <button onclick="document.getElementById('fileInput').click()" class="bg-white hover:bg-slate-50 text-slate-600 py-2 rounded-xl text-xs font-bold shadow-sm border border-slate-200 transition">
-                    <i class="fa-solid fa-upload mr-1"></i> Upload
-                </button>
-                <input type="file" id="fileInput" class="hidden" accept=".html, .txt">
                 
-                <button id="openTabBtn" class="bg-white hover:bg-blue-50 text-blue-600 py-2 rounded-xl text-xs font-bold shadow-sm border border-blue-100 transition">
-                    <i class="fa-solid fa-up-right-from-square mr-1"></i> New Tab
-                </button>
-            </div>
-            
-            <!-- Editor -->
-            <div id="editorSection" class="border-t border-slate-200/50 pt-4">
-                 <div class="flex justify-between items-center mb-2">
-                    <span class="text-[10px] font-bold text-slate-400 uppercase">Editor</span>
-                    <div class="flex gap-2">
-                        <button id="toggleEditorDisplay" class="text-[10px] font-bold text-indigo-600 hover:underline">Hide/Show</button>
-                        <button id="pasteBtn" class="text-[10px] font-bold text-indigo-600 hover:underline">Paste</button>
-                        <button id="clearBtn" class="text-[10px] font-bold text-red-500 hover:underline">Clear</button>
-                    </div>
-                </div>
-                <div id="editorContainer" class="transition-all duration-300 overflow-hidden" style="max-height: 150px;">
-                    <textarea id="htmlInput" class="w-full h-[120px] p-3 rounded-lg bg-slate-50 border border-slate-200 font-mono text-[10px] text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-y" placeholder="<!-- HTML Code -->"></textarea>
+                <!-- Size Indicator (Hover) -->
+                <div class="absolute -top-6 left-0 text-xs font-mono font-bold text-gray-500 opacity-0 group-hover:opacity-100 transition-opacity bg-white/80 px-2 py-1 rounded">
+                    <span id="debug-width">960</span>px
                 </div>
             </div>
 
-            <!-- Buttons Grid -->
-            <div class="grid grid-cols-2 gap-2 mt-auto">
-                 <button id="cropModeBtn" class="py-3 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold rounded-xl shadow-sm transition flex items-center justify-center gap-2 text-xs">
-                    <i class="fa-solid fa-crop-simple"></i> Crop
-                </button>
-                <button id="generateBtn" class="py-3 bg-slate-900 hover:bg-black text-white font-bold rounded-xl shadow-lg transition flex items-center justify-center gap-2 text-xs">
-                    <i class="fa-solid fa-camera text-yellow-400"></i> Capture
+        </div>
+
+        <!-- Settings Panel -->
+        <div id="settings-panel" class="fixed top-4 left-4 z-40 w-[90vw] max-w-[380px] glass-panel rounded-2xl flex flex-col max-h-[90vh] shadow-2xl transition-all duration-300">
+            
+            <!-- Panel Header -->
+            <div class="p-4 border-b border-white/40 flex justify-between items-center cursor-pointer select-none" onclick="togglePanel()">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-full bg-gradient-to-br from-pink-500 to-yellow-500 flex items-center justify-center text-white font-bold shadow-md">
+                        <i class="fa-solid fa-crop-simple"></i>
+                    </div>
+                    <h2 class="font-bold text-lg text-slate-800 tracking-tight">Crop Me!</h2>
+                </div>
+                <button class="w-8 h-8 rounded-full hover:bg-black/5 flex items-center justify-center transition-colors">
+                    <i id="panel-chevron" class="fa-solid fa-chevron-down transition-transform"></i>
                 </button>
             </div>
+
+            <!-- Panel Content -->
+            <div id="panel-content" class="p-5 overflow-y-auto custom-scrollbar space-y-6">
+                
+                <!-- Width -->
+                <div class="space-y-3">
+                    <div class="flex justify-between items-end">
+                        <label class="text-xs font-bold uppercase text-slate-500 tracking-wider">Canvas Width</label>
+                        <span id="width-val" class="text-xs font-mono font-bold bg-slate-100 px-2 py-1 rounded text-slate-600">960px</span>
+                    </div>
+                    <div class="flex gap-2 items-center">
+                        <input type="range" id="width-slider" min="300" max="3000" value="960" class="flex-1">
+                        <button onclick="autoFit()" title="Auto-Fit Content" class="w-8 h-8 flex items-center justify-center rounded-lg bg-white border border-gray-200 hover:bg-blue-50 text-blue-600 transition-colors shadow-sm">
+                            <i class="fa-solid fa-expand text-xs"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Zoom -->
+                <div class="space-y-3">
+                    <div class="flex justify-between items-end">
+                        <label class="text-xs font-bold uppercase text-slate-500 tracking-wider">Zoom / Scale</label>
+                        <div id="quality-badge" class="text-[10px] font-bold bg-gradient-to-r from-purple-500 to-pink-500 text-white px-2 py-0.5 rounded-full shadow-sm">4K ULTRA</div>
+                    </div>
+                    <div class="flex gap-2 items-center">
+                        <input type="range" id="zoom-slider" min="1" max="10" step="0.1" value="4" class="flex-1">
+                        <span id="zoom-val" class="text-xs font-mono font-bold w-10 text-right">4.0x</span>
+                    </div>
+                    <div class="text-[10px] text-center text-slate-400 font-mono">
+                        Output: <span id="calc-res">3840 x Auto</span> px
+                    </div>
+                </div>
+
+                <!-- Toggles -->
+                <div class="space-y-3">
+                    <!-- Center Toggle -->
+                    <div class="flex items-center justify-between bg-white/50 p-3 rounded-xl border border-white/40">
+                        <span class="text-sm font-semibold text-slate-700">Center Content</span>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="center-toggle" class="sr-only peer">
+                            <div class="w-11 h-6 bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-pink-500"></div>
+                        </label>
+                    </div>
+
+                    <!-- SAFE MODE Toggle -->
+                    <div class="flex items-center justify-between bg-indigo-50 p-3 rounded-xl border border-indigo-100">
+                        <div class="flex flex-col">
+                            <span class="text-sm font-bold text-indigo-900">✨ Safe Mode</span>
+                            <span class="text-[10px] text-indigo-600 font-medium">Enhance readability</span>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="safe-mode-toggle" class="sr-only peer" onchange="toggleSafeMode()">
+                            <div class="w-11 h-6 bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Editor -->
+                <div class="space-y-2">
+                    <div class="flex justify-between items-center">
+                        <label class="text-xs font-bold uppercase text-slate-500 tracking-wider">HTML Editor</label>
+                        <div class="flex gap-1">
+                            <button onclick="pasteCode()" class="text-[10px] bg-indigo-100 text-indigo-600 hover:bg-indigo-200 px-2 py-1 rounded transition font-bold" title="Paste from Clipboard"><i class="fa-solid fa-paste"></i> Paste</button>
+                            <button onclick="loadSample()" class="text-[10px] bg-gray-200 hover:bg-gray-300 px-2 py-1 rounded transition">Reset</button>
+                            <button onclick="clearCode()" class="text-[10px] bg-red-100 text-red-600 hover:bg-red-200 px-2 py-1 rounded transition">Clear</button>
+                        </div>
+                    </div>
+                    <textarea id="code-input" class="w-full h-48 p-3 font-mono text-xs bg-slate-900 text-green-400 rounded-xl resize-y focus:outline-none focus:ring-2 focus:ring-pink-500 shadow-inner leading-relaxed" spellcheck="false" placeholder="<h1>Paste HTML here...</h1>"></textarea>
+                </div>
+
+                <!-- Actions -->
+                <div class="grid grid-cols-2 gap-3 pt-2">
+                    <label class="cursor-pointer flex items-center justify-center gap-2 bg-white hover:bg-gray-50 border border-gray-200 text-slate-700 py-2.5 rounded-xl text-sm font-bold transition-all shadow-sm active:scale-95">
+                        <i class="fa-solid fa-upload"></i> Upload
+                        <input type="file" id="file-upload" accept=".html,.txt" class="hidden">
+                    </label>
+                    <button onclick="openNewTab()" class="flex items-center justify-center gap-2 bg-white hover:bg-gray-50 border border-gray-200 text-slate-700 py-2.5 rounded-xl text-sm font-bold transition-all shadow-sm active:scale-95">
+                        <i class="fa-solid fa-arrow-up-right-from-square"></i> Preview
+                    </button>
+                </div>
+
+                <div class="pt-2 border-t border-white/40">
+                    <div class="grid grid-cols-2 gap-3">
+                        <button onclick="startCropMode()" class="group relative overflow-hidden flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-xl text-sm font-bold transition-all shadow-lg shadow-indigo-500/30 active:scale-95">
+                            <span class="relative z-10 flex items-center gap-2"><i class="fa-solid fa-crop-simple"></i> Crop</span>
+                        </button>
+                        <button onclick="capture(false)" class="group relative overflow-hidden flex items-center justify-center gap-2 bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-700 hover:to-purple-700 text-white py-3 rounded-xl text-sm font-bold transition-all shadow-lg shadow-pink-500/30 active:scale-95">
+                            <span class="relative z-10 flex items-center gap-2"><i class="fa-solid fa-camera"></i> Capture</span>
+                        </button>
+                    </div>
+                </div>
+
+            </div>
         </div>
+
     </div>
 
-    <!-- CROP TOOLBAR (Floating) -->
-    <div id="crop-toolbar">
-        <button id="cancelCropBtn" class="bg-slate-100 hover:bg-slate-200 text-slate-600 px-4 py-2 rounded-full text-xs font-bold transition">
-            Cancel
-        </button>
-        <button id="confirmCropBtn" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-full text-xs font-bold transition shadow-lg flex items-center gap-2">
-            <i class="fa-solid fa-check"></i> Snap
-        </button>
+    <!-- Crop Toolbar (Floating) -->
+    <div id="crop-toolbar" class="fixed top-6 left-1/2 -translate-x-1/2 bg-white rounded-full shadow-2xl px-6 py-3 flex gap-4 items-center z-[70] animate-bounce-in hidden">
+        <span class="text-sm font-bold text-gray-600 mr-2"><i class="fa-solid fa-scissors mr-1"></i> Draw box to snap</span>
+        <button onclick="cancelCrop()" class="text-sm font-bold text-gray-500 hover:text-gray-800 transition">Cancel</button>
+        <div class="h-4 w-[1px] bg-gray-300"></div>
+        <button onclick="snapCrop()" class="text-sm font-bold text-white bg-black hover:bg-gray-800 px-4 py-1.5 rounded-full shadow-md transition transform active:scale-95">Snap!</button>
+    </div>
+
+    <!-- Crop Overlay -->
+    <div id="crop-overlay" class="fixed inset-0 z-50 hidden select-none touch-none bg-black/30">
+        <div id="crop-box" class="crop-selection hidden"></div>
     </div>
 
     <!-- Loading Overlay -->
-    <div id="loadingOverlay" class="fixed inset-0 bg-white/80 backdrop-blur-md hidden items-center justify-center z-[100]">
-        <div class="flex flex-col items-center animate-bounce">
-            <div class="w-12 h-12 bg-indigo-600 rounded-xl rotate-45 shadow-xl mb-4"></div>
-            <h3 class="text-lg font-bold text-slate-800">Processing...</h3>
+    <div id="loader" class="fixed inset-0 z-[60] bg-black/90 backdrop-blur-md flex flex-col items-center justify-center hidden">
+        <div class="relative w-24 h-24 mb-8">
+            <div class="absolute inset-0 border-t-4 border-pink-500 rounded-full animate-spin"></div>
+            <div class="absolute inset-2 border-t-4 border-cyan-400 rounded-full animate-spin" style="animation-duration: 1.5s; animation-direction: reverse;"></div>
+            <div class="absolute inset-4 border-t-4 border-yellow-400 rounded-full animate-spin" style="animation-duration: 2s;"></div>
         </div>
+        <h3 class="text-white text-3xl font-bold tracking-widest animate-pulse">RENDERING</h3>
+        <p id="loader-status" class="text-gray-400 font-mono text-sm mt-2">Generating High-Res Pixels...</p>
     </div>
 
     <script>
         // --- Elements ---
-        const widthRange = document.getElementById('widthRange');
-        const widthValue = document.getElementById('widthValue');
-        const zoomRange = document.getElementById('zoomRange');
-        const zoomValue = document.getElementById('zoomValue');
-        const qualityBadge = document.getElementById('qualityBadge');
-        const finalWidthDisp = document.getElementById('finalWidthDisp');
-        const centerToggle = document.getElementById('centerToggle'); 
-        const htmlInput = document.getElementById('htmlInput');
-        const fileInput = document.getElementById('fileInput');
-        const clearBtn = document.getElementById('clearBtn');
-        const pasteBtn = document.getElementById('pasteBtn'); 
-        const openTabBtn = document.getElementById('openTabBtn');
-        const captureTarget = document.getElementById('capture-target');
-        const generateBtn = document.getElementById('generateBtn');
-        const loadingOverlay = document.getElementById('loadingOverlay');
-        const editorContainer = document.getElementById('editorContainer');
-        const toggleEditorDisplay = document.getElementById('toggleEditorDisplay');
-        const autoFitBtn = document.getElementById('autoFitBtn'); 
-        
-        // Panel UI Elements
-        const settingsPanel = document.getElementById('settingsPanel');
-        const togglePanelBtn = document.getElementById('togglePanelBtn');
-        const toggleIcon = document.getElementById('toggleIcon');
+        const codeInput = document.getElementById('code-input');
+        const userContent = document.getElementById('user-content');
+        const captureWrapper = document.getElementById('capture-wrapper');
+        const canvasScroller = document.getElementById('canvas-scroller');
+        const widthSlider = document.getElementById('width-slider');
+        const widthVal = document.getElementById('width-val');
+        const debugWidth = document.getElementById('debug-width');
+        const zoomSlider = document.getElementById('zoom-slider');
+        const zoomVal = document.getElementById('zoom-val');
+        const calcRes = document.getElementById('calc-res');
+        const centerToggle = document.getElementById('center-toggle');
+        const loader = document.getElementById('loader');
+        const panelContent = document.getElementById('panel-content');
+        const panelChevron = document.getElementById('panel-chevron');
+        const qualityBadge = document.getElementById('quality-badge');
         
         // Crop Elements
-        const cropModeBtn = document.getElementById('cropModeBtn');
         const cropOverlay = document.getElementById('crop-overlay');
         const cropBox = document.getElementById('crop-box');
         const cropToolbar = document.getElementById('crop-toolbar');
-        const cancelCropBtn = document.getElementById('cancelCropBtn');
-        const confirmCropBtn = document.getElementById('confirmCropBtn');
 
-        // --- Default Content ---
+        // --- State ---
+        let isPanelOpen = true;
+        let isCropping = false;
+        let startX, startY;
+
+        // --- Sample Content ---
         const defaultHTML = `
-<div style="width: 100%; font-family: 'Outfit', sans-serif; background: white; overflow: hidden;">
-    <div style="height: 300px; background: linear-gradient(135deg, #FF3CAC 0%, #784BA0 100%); color: white; display: flex; align-items: center; justify-content: center; text-align: center; flex-direction: column;">
-        <h1 style="font-size: 3.5rem; margin: 0; font-weight: 800;">Crop Me!</h1>
-        <p style="font-size: 1.2rem; opacity: 0.9;">Try the new Crop & Capture tool</p>
-    </div>
-    <div style="padding: 40px; max-width: 800px; margin: 0 auto;">
-        <p style="color: #666; line-height: 1.6; font-size: 1.2rem;">This is a sample page. Click the "Crop & Capture" button, then draw a box around any part of this preview to capture just that area!</p>
-        <div style="margin: 30px 0; display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-            <div style="background: #f0fdf4; padding: 20px; border-radius: 15px; color: #166534;">
-                <strong>Default: 1920px</strong><br>4K Ready
-            </div>
-            <div style="background: #eff6ff; padding: 20px; border-radius: 15px; color: #1e40af;">
-                <strong>High Res</strong><br>Crisp Text
+<div class="w-full h-full min-h-[600px] flex items-center justify-center bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-12">
+    <div class="relative group">
+        <!-- Glow Effect -->
+        <div class="absolute -inset-1 bg-gradient-to-r from-pink-600 to-purple-600 rounded-2xl blur opacity-25 group-hover:opacity-75 transition duration-1000 group-hover:duration-200"></div>
+        
+        <!-- Card Content -->
+        <div class="relative px-7 py-6 bg-white ring-1 ring-gray-900/5 rounded-2xl leading-none flex items-top justify-start space-x-6">
+            <div class="space-y-2">
+                <div class="flex items-center gap-3">
+                    <span class="text-3xl">🚀</span>
+                    <p class="text-slate-800 text-2xl font-bold font-sans">Crop Me!</p>
+                </div>
+                <p class="text-slate-600 max-w-sm text-base leading-relaxed">
+                    A production-ready HTML-to-Image tool. Paste your Tailwind code, adjust the slider, and 
+                    <span class="font-bold text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-purple-500">snap pixel-perfect images</span>.
+                </p>
+                <div class="pt-4 flex gap-3">
+                    <button class="bg-slate-900 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-slate-800 transition">Get Started</button>
+                    <button class="text-slate-500 hover:text-slate-800 text-sm font-medium px-4 py-2 transition">Learn More &rarr;</button>
+                </div>
             </div>
         </div>
     </div>
 </div>`;
 
-        htmlInput.value = defaultHTML;
-
-        // --- UI Logic ---
-
-        // Collapse/Expand Panel
-        let isCollapsed = false;
-        togglePanelBtn.addEventListener('click', () => {
-            isCollapsed = !isCollapsed;
-            if (isCollapsed) {
-                settingsPanel.classList.add('panel-collapsed');
-                toggleIcon.classList.add('rotate-180');
-            } else {
-                settingsPanel.classList.remove('panel-collapsed');
-                toggleIcon.classList.remove('rotate-180');
-            }
+        window.addEventListener('DOMContentLoaded', () => {
+            loadSample();
+            updateCalculations();
         });
 
-        // Collapse/Expand Editor
-        toggleEditorDisplay.addEventListener('click', () => {
-            if (editorContainer.style.maxHeight === '0px') {
-                editorContainer.style.maxHeight = '150px';
-            } else {
-                editorContainer.style.maxHeight = '0px';
-            }
-        });
-        
-        const calculateResolution = () => {
-            const w = parseInt(widthRange.value);
-            const z = parseFloat(zoomRange.value);
-            const totalW = Math.round(w * z);
-            finalWidthDisp.innerText = `${totalW} px`;
-            let label = "SD";
-            if(totalW > 7000) label = "8K ULTRA";
-            else if(totalW > 3800) label = "4K UHD";
-            else if(totalW > 2500) label = "2K QHD";
-            else if(totalW > 1900) label = "1080p";
-            qualityBadge.innerText = label;
-        };
+        // --- Core Functions ---
 
-        const updatePreview = () => {
-            const w = widthRange.value;
-            captureTarget.style.width = `${w}px`;
-            captureTarget.innerHTML = htmlInput.value;
-            
-            // Re-append crop overlay since innerHTML wipes it
-            captureTarget.appendChild(cropOverlay);
-
-            if (centerToggle.checked) {
-                captureTarget.style.display = 'flex';
-                captureTarget.style.flexDirection = 'column';
-                captureTarget.style.justifyContent = 'center';
-                captureTarget.style.alignItems = 'center';
-                captureTarget.style.textAlign = 'center'; 
-                captureTarget.style.minHeight = '100%';
-            } else {
-                captureTarget.style.display = 'block';
-                captureTarget.style.textAlign = 'left';
-                captureTarget.style.minHeight = 'auto';
-            }
-            calculateResolution();
-        };
-
-        // --- Auto Fit Function ---
-        autoFitBtn.addEventListener('click', () => {
-            // 1. Reset width to auto to let content dictate size
-            captureTarget.style.width = 'auto';
-            captureTarget.style.display = 'inline-block'; // Helper to shrink wrap
-            
-            // 2. Measure natural width
-            const naturalWidth = captureTarget.scrollWidth;
-            
-            // 3. Update Slider UI
-            widthRange.value = naturalWidth;
-            widthValue.innerText = naturalWidth + ' px';
-            
-            // 4. Re-apply settings via updatePreview
+        function loadSample() {
+            codeInput.value = defaultHTML;
             updatePreview();
-        });
+        }
 
-        // --- Crop Logic ---
-        let isCropping = false;
-        let isDrawing = false;
-        let startX = 0, startY = 0;
-        let cropRect = { x: 0, y: 0, w: 0, h: 0 };
-
-        const startCropMode = () => {
-            isCropping = true;
-            cropOverlay.style.display = 'block';
-            cropToolbar.style.display = 'flex';
-            if (window.innerWidth < 640) {
-                settingsPanel.classList.add('panel-collapsed');
-                toggleIcon.classList.add('rotate-180');
-            }
-            cropBox.style.width = '0';
-            cropBox.style.height = '0';
-            cropBox.style.borderWidth = '0'; 
-        };
-
-        const endCropMode = () => {
-            isCropping = false;
-            cropOverlay.style.display = 'none';
-            cropToolbar.style.display = 'none';
-        };
-        
-        const getCoords = (e) => {
-            const rect = cropOverlay.getBoundingClientRect();
-            let clientX, clientY;
-            
-            if (e.touches && e.touches.length > 0) {
-                clientX = e.touches[0].clientX;
-                clientY = e.touches[0].clientY;
-            } else {
-                clientX = e.clientX;
-                clientY = e.clientY;
-            }
-            
-            return {
-                x: clientX - rect.left,
-                y: clientY - rect.top
-            };
-        };
-
-        const handleStart = (e) => {
-            if (e.cancelable) e.preventDefault(); 
-            isDrawing = true;
-            const coords = getCoords(e);
-            startX = coords.x;
-            startY = coords.y;
-            
-            cropBox.style.left = startX + 'px';
-            cropBox.style.top = startY + 'px';
-            cropBox.style.width = '0px';
-            cropBox.style.height = '0px';
-            cropBox.style.borderWidth = '2px';
-        };
-
-        const handleMove = (e) => {
-            if (!isDrawing) return;
-            if (e.cancelable) e.preventDefault(); 
-            
-            const coords = getCoords(e);
-            const width = coords.x - startX;
-            const height = coords.y - startY;
-
-            cropRect = {
-                x: width > 0 ? startX : coords.x,
-                y: height > 0 ? startY : coords.y,
-                w: Math.abs(width),
-                h: Math.abs(height)
-            };
-
-            cropBox.style.left = cropRect.x + 'px';
-            cropBox.style.top = cropRect.y + 'px';
-            cropBox.style.width = cropRect.w + 'px';
-            cropBox.style.height = cropRect.h + 'px';
-        };
-
-        const handleEnd = () => {
-            isDrawing = false;
-        };
-
-        cropOverlay.addEventListener('mousedown', handleStart);
-        cropOverlay.addEventListener('mousemove', handleMove);
-        cropOverlay.addEventListener('mouseup', handleEnd);
-
-        cropOverlay.addEventListener('touchstart', handleStart, { passive: false });
-        cropOverlay.addEventListener('touchmove', handleMove, { passive: false });
-        cropOverlay.addEventListener('touchend', handleEnd);
-
-        cropModeBtn.addEventListener('click', startCropMode);
-        cancelCropBtn.addEventListener('click', endCropMode);
-
-        confirmCropBtn.addEventListener('click', () => {
-            if (cropRect.w === 0 || cropRect.h === 0) {
-                alert("Please draw a box first!");
-                return;
-            }
-
-            loadingOverlay.classList.remove('hidden');
-            loadingOverlay.classList.add('flex');
-            cropOverlay.style.display = 'none';
-
-            setTimeout(() => {
-                const scale = parseFloat(zoomRange.value);
-                
-                // 1. Calculate Coordinates
-                const rect = captureTarget.getBoundingClientRect();
-                const ratioX = captureTarget.offsetWidth / rect.width;
-                const ratioY = captureTarget.offsetHeight / rect.height;
-                
-                const domCropX = cropRect.x * ratioX;
-                const domCropY = cropRect.y * ratioY;
-                const domCropW = cropRect.w * ratioX;
-                const domCropH = cropRect.h * ratioY;
-
-                // 2. Clone Strategy
-                const clone = captureTarget.cloneNode(true);
-                
-                // 3. Style the Clone
-                clone.style.position = 'absolute';
-                clone.style.top = '0';
-                clone.style.left = '0';
-                clone.style.zIndex = '-10000';
-                clone.style.width = captureTarget.offsetWidth + 'px';
-                
-                // FIX: Add "overflow: hidden" to force margin containment (BFC)
-                clone.style.overflow = 'hidden'; 
-                
-                clone.style.height = 'auto'; 
-                clone.style.transform = 'none';
-                clone.style.transition = 'none';
-                clone.style.margin = '0';
-                
-                // Explicitly inherit color to prevent transparency issues
-                const computedStyle = window.getComputedStyle(captureTarget);
-                clone.style.color = computedStyle.color;
-
-                const cloneOverlay = clone.querySelector('#crop-overlay');
-                if(cloneOverlay) cloneOverlay.remove();
-
-                // Append to body to ensure full render context
-                document.body.appendChild(clone);
-
-                // 4. Capture
-                html2canvas(clone, {
-                    scale: scale,
-                    backgroundColor: '#ffffff', // Force white background
-                    useCORS: true,
-                    logging: false,
-                    scrollY: 0, 
-                    scrollX: 0,
-                    // Ensure windowHeight is large enough to include everything
-                    windowHeight: clone.scrollHeight + 100,
-                    windowWidth: clone.scrollWidth,
-                    onclone: (clonedDoc) => {
-                        const style = clonedDoc.createElement('style');
-                        style.innerHTML = `
-                            * { 
-                                animation: none !important; 
-                                transition: none !important; 
-                                opacity: 1 !important;
-                                visibility: visible !important;
-                            }
-                        `;
-                        clonedDoc.head.appendChild(style);
-                    }
-                }).then(fullCanvas => {
-                    document.body.removeChild(clone); 
-
-                    // 5. Crop
-                    const cropCanvas = document.createElement('canvas');
-                    cropCanvas.width = domCropW * scale;
-                    cropCanvas.height = domCropH * scale;
-                    
-                    const ctx = cropCanvas.getContext('2d');
-                    
-                    const sx = domCropX * scale;
-                    const sy = domCropY * scale;
-                    const sw = domCropW * scale;
-                    const sh = domCropH * scale;
-
-                    if (sx >= 0 && sy >= 0) {
-                         ctx.drawImage(fullCanvas, sx, sy, sw, sh, 0, 0, cropCanvas.width, cropCanvas.height);
-                    } else {
-                        console.warn("Crop bounds mismatch, attempting best fit");
-                        ctx.drawImage(fullCanvas, sx, sy, sw, sh, 0, 0, cropCanvas.width, cropCanvas.height);
-                    }
-
-                    const link = document.createElement('a');
-                    link.download = `cropped-capture-${Date.now()}.jpg`;
-                    link.href = cropCanvas.toDataURL('image/jpeg', 0.95);
-                    link.click();
-                    
-                    loadingOverlay.classList.add('hidden');
-                    loadingOverlay.classList.remove('flex');
-                    endCropMode();
-                }).catch(e => {
-                    console.error(e);
-                    if(document.body.contains(clone)) document.body.removeChild(clone);
-                    alert("Error capturing crop.");
-                    loadingOverlay.classList.add('hidden');
-                    loadingOverlay.classList.remove('flex');
-                    cropOverlay.style.display = 'block'; 
-                });
-            }, 200);
-        });
-
-        // --- Standard Listeners ---
-        let timer;
-        htmlInput.addEventListener('input', () => {
-            clearTimeout(timer);
-            timer = setTimeout(updatePreview, 300);
-        });
-
-        widthRange.addEventListener('input', (e) => {
-            widthValue.innerText = `${e.target.value} px`;
+        function clearCode() {
+            codeInput.value = '';
             updatePreview();
-        });
-
-        zoomRange.addEventListener('input', (e) => {
-            zoomValue.innerText = `${e.target.value}x`;
-            calculateResolution();
-        });
-
-        centerToggle.addEventListener('change', updatePreview);
+        }
         
-        clearBtn.addEventListener('click', () => {
-            htmlInput.value = '';
-            updatePreview();
-        });
-
-        pasteBtn.addEventListener('click', async () => {
+        async function pasteCode() {
             try {
                 const text = await navigator.clipboard.readText();
-                htmlInput.value = text;
+                codeInput.value = text;
                 updatePreview();
             } catch (err) {
-                alert("Please paste manually using Ctrl+V");
+                alert('Browser blocked automatic paste. Please use Ctrl+V in the editor.');
             }
-        });
+        }
 
-        openTabBtn.addEventListener('click', () => {
-            const newWindow = window.open();
-            if (newWindow) {
-                newWindow.document.write(htmlInput.value);
-                newWindow.document.close();
+        function updatePreview() {
+            userContent.innerHTML = codeInput.value;
+        }
+        
+        function toggleSafeMode() {
+            const isSafe = document.getElementById('safe-mode-toggle').checked;
+            if (isSafe) {
+                captureWrapper.classList.add('safe-mode');
             } else {
-                alert("Popup blocked!");
+                captureWrapper.classList.remove('safe-mode');
+            }
+        }
+
+        codeInput.addEventListener('input', updatePreview);
+
+        function togglePanel() {
+            isPanelOpen = !isPanelOpen;
+            if (isPanelOpen) {
+                panelContent.style.display = 'block';
+                panelChevron.style.transform = 'rotate(0deg)';
+            } else {
+                panelContent.style.display = 'none';
+                panelChevron.style.transform = 'rotate(-90deg)';
+            }
+        }
+
+        // --- Settings Logic ---
+        widthSlider.addEventListener('input', (e) => {
+            const val = e.target.value + 'px';
+            captureWrapper.style.width = val;
+            widthVal.textContent = val;
+            debugWidth.textContent = e.target.value;
+            updateCalculations();
+        });
+
+        zoomSlider.addEventListener('input', (e) => {
+            zoomVal.textContent = e.target.value + 'x';
+            updateCalculations();
+        });
+
+        function autoFit() {
+            captureWrapper.style.width = 'min-content';
+            // Force a reflow/check of natural scrollWidth
+            const naturalWidth = userContent.scrollWidth;
+            const finalWidth = Math.max(300, naturalWidth); // Min 300px
+            
+            captureWrapper.style.width = finalWidth + 'px';
+            widthSlider.value = finalWidth;
+            widthVal.textContent = finalWidth + 'px';
+            debugWidth.textContent = finalWidth;
+            updateCalculations();
+        }
+
+        centerToggle.addEventListener('change', (e) => {
+            if (e.target.checked) {
+                canvasScroller.classList.remove('items-start', 'justify-start');
+                canvasScroller.classList.add('items-center', 'justify-center');
+            } else {
+                canvasScroller.classList.remove('items-center', 'justify-center');
+                canvasScroller.classList.add('items-start', 'justify-start');
             }
         });
 
-        fileInput.addEventListener('change', (e) => {
+        document.getElementById('file-upload').addEventListener('change', function(e) {
             const file = e.target.files[0];
             if (!file) return;
             const reader = new FileReader();
-            reader.onload = (ev) => {
-                htmlInput.value = ev.target.result;
+            reader.onload = function(e) {
+                codeInput.value = e.target.result;
                 updatePreview();
             };
             reader.readAsText(file);
         });
 
-        generateBtn.addEventListener('click', () => {
-            loadingOverlay.classList.remove('hidden');
-            loadingOverlay.classList.add('flex');
+        function openNewTab() {
+            const win = window.open('', '_blank');
+            const html = `
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>Crop Me! Preview</title>
+                    <script src="https://cdn.tailwindcss.com"><\/script>
+                    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+                    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Outfit:wght@300;400;600;800&family=Sarabun:wght@300;400;600;800&display=swap" rel="stylesheet">
+                    <style>body { font-family: 'Outfit', sans-serif; margin: 0; }</style>
+                </head>
+                <body>${codeInput.value}</body>
+                </html>`;
+            win.document.write(html);
+            win.document.close();
+        }
 
-            setTimeout(() => {
-                const scale = parseFloat(zoomRange.value);
-                
-                // Full Capture
-                const clone = captureTarget.cloneNode(true);
-                clone.style.position = 'absolute';
-                clone.style.top = '0';
-                clone.style.left = '0';
-                clone.style.zIndex = '-10000';
-                clone.style.width = captureTarget.offsetWidth + 'px';
-                
-                // FIX: Force margin containment (BFC) here too
-                clone.style.overflow = 'hidden';
-                
-                clone.style.height = 'auto';
-                clone.style.transform = 'none';
-                clone.style.transition = 'none';
-                clone.style.margin = '0';
-                
-                const computedStyle = window.getComputedStyle(captureTarget);
-                clone.style.color = computedStyle.color;
-                
-                const cloneOverlay = clone.querySelector('#crop-overlay');
-                if(cloneOverlay) cloneOverlay.remove();
+        function updateCalculations() {
+            const w = parseInt(widthSlider.value);
+            const scale = parseFloat(zoomSlider.value);
+            const totalW = Math.round(w * scale);
+            
+            calcRes.textContent = `${totalW} x Auto`;
+            
+            qualityBadge.className = "text-[10px] font-bold text-white px-2 py-0.5 rounded-full shadow-sm transition-colors";
+            if (totalW < 1920) {
+                qualityBadge.textContent = "SD";
+                qualityBadge.classList.add('bg-gray-500');
+            } else if (totalW < 3840) {
+                qualityBadge.textContent = "HD";
+                qualityBadge.classList.add('bg-green-500');
+            } else if (totalW < 7680) {
+                qualityBadge.textContent = "4K ULTRA";
+                qualityBadge.classList.add('bg-gradient-to-r', 'from-purple-500', 'to-pink-500');
+            } else {
+                qualityBadge.textContent = "8K INSANE";
+                qualityBadge.classList.add('bg-gradient-to-r', 'from-yellow-500', 'to-red-600');
+            }
+        }
 
-                document.body.appendChild(clone);
+        // --- Capture Logic (Strict WYSIWYG & Black Space Fix) ---
 
-                html2canvas(clone, {
-                    scale: scale,
-                    backgroundColor: '#ffffff',
-                    useCORS: true,
-                    logging: false,
-                    scrollY: 0,
-                    scrollX: 0,
-                    // Ensure windowHeight is large enough
-                    windowHeight: clone.scrollHeight + 100,
-                    windowWidth: clone.scrollWidth,
-                    onclone: (clonedDoc) => {
-                        const style = clonedDoc.createElement('style');
-                        style.innerHTML = `
-                            * { 
-                                animation: none !important; 
-                                transition: none !important; 
-                                opacity: 1 !important;
-                                visibility: visible !important;
-                            }
-                        `;
-                        clonedDoc.head.appendChild(style);
-                    } 
-                }).then(canvas => {
-                    document.body.removeChild(clone);
+        async function capture(isCrop = false, cropRect = null) {
+            loader.classList.remove('hidden');
+            document.getElementById('loader-status').textContent = isCrop ? "Cropping High-Res Region..." : "Rendering Full Canvas...";
+            
+            // Wait for fonts to ensure no layout shifts
+            await document.fonts.ready;
+            
+            // Prepare relative coords if cropping
+            let relX = 0, relY = 0, relW = 0, relH = 0;
+            if (isCrop && cropRect) {
+                const wrapperRect = captureWrapper.getBoundingClientRect();
+                relX = cropRect.x - wrapperRect.left;
+                relY = cropRect.y - wrapperRect.top;
+                relW = cropRect.width;
+                relH = cropRect.height;
+            }
 
-                    const link = document.createElement('a');
-                    link.download = `full-capture-${Date.now()}.jpg`;
-                    link.href = canvas.toDataURL('image/jpeg', 0.95);
-                    link.click();
-                    loadingOverlay.classList.add('hidden');
-                    loadingOverlay.classList.remove('flex');
-                }).catch(e => {
-                    console.error(e);
-                    if(document.body.contains(clone)) document.body.removeChild(clone);
-                    alert("Error generating image.");
-                    loadingOverlay.classList.add('hidden');
-                    loadingOverlay.classList.remove('flex');
-                });
-            }, 200);
-        });
+            const scale = parseFloat(zoomSlider.value);
+            
+            // CRITICAL FIX: Get explicit current dimensions
+            const currentW = captureWrapper.offsetWidth;
+            const currentH = captureWrapper.offsetHeight;
 
-        // Init
-        updatePreview();
+            // CRITICAL FIX: Pass explicit dimensions and reset transforms in style
+            const options = {
+                backgroundColor: null, 
+                pixelRatio: scale,
+                width: currentW,
+                height: currentH,
+                style: {
+                    // This forces the library to render the element at 0,0 of its internal canvas
+                    // ignoring parent scroll offsets or flex centering margins.
+                    transform: 'none',
+                    margin: '0',
+                    left: '0',
+                    top: '0',
+                }
+            };
+
+            try {
+                // 1. Capture the full element at high res
+                const dataUrl = await htmlToImage.toJpeg(captureWrapper, options);
+                
+                let finalDataUrl = dataUrl;
+
+                // 2. If cropping, cut the specific piece out of the high-res image
+                if (isCrop && cropRect) {
+                    const img = new Image();
+                    img.src = dataUrl;
+                    await new Promise(resolve => img.onload = resolve);
+
+                    const cropCanvas = document.createElement('canvas');
+                    // Calculate scaled dimensions
+                    cropCanvas.width = relW * scale;
+                    cropCanvas.height = relH * scale;
+                    const ctx = cropCanvas.getContext('2d');
+
+                    // drawImage(source, srcX, srcY, srcW, srcH, destX, destY, destW, destH)
+                    ctx.drawImage(
+                        img, 
+                        relX * scale, relY * scale, 
+                        relW * scale, relH * scale, 
+                        0, 0, 
+                        cropCanvas.width, cropCanvas.height
+                    );
+                    finalDataUrl = cropCanvas.toDataURL("image/jpeg", 0.95);
+                }
+                
+                // 3. Download
+                const link = document.createElement('a');
+                link.download = `cropme-${Date.now()}.jpg`;
+                link.href = finalDataUrl;
+                link.click();
+
+            } catch (err) {
+                console.error(err);
+                alert("Error capturing image. Check console for details.");
+            } finally {
+                loader.classList.add('hidden');
+                if(isCrop) endCropMode();
+            }
+        }
+
+        // --- Crop Selection Logic ---
+        function startCropMode() {
+            isCropping = true;
+            // Auto collapse panel to see better
+            isPanelOpen = false;
+            togglePanel(); 
+            
+            cropOverlay.classList.remove('hidden');
+            cropBox.classList.add('hidden');
+            cropToolbar.classList.remove('hidden'); 
+            cropToolbar.classList.add('flex'); 
+            cropBox.style.width = '0';
+            cropBox.style.height = '0';
+        }
+
+        function endCropMode() {
+            isCropping = false;
+            cropOverlay.classList.add('hidden');
+            cropToolbar.classList.add('hidden');
+            cropToolbar.classList.remove('flex');
+            // Re-open panel
+            isPanelOpen = true;
+            panelContent.style.display = 'block'; 
+            panelChevron.style.transform = 'rotate(0deg)';
+        }
+
+        function cancelCrop() {
+            endCropMode();
+        }
+
+        function getPointerPos(e) {
+            // Support both touch and mouse
+            if (e.touches) return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+            return { x: e.clientX, y: e.clientY };
+        }
+
+        cropOverlay.addEventListener('mousedown', cropStart);
+        cropOverlay.addEventListener('touchstart', cropStart, {passive: false});
+
+        function cropStart(e) {
+            if (e.target.closest('#crop-toolbar')) return;
+            e.preventDefault();
+            const pos = getPointerPos(e);
+            startX = pos.x;
+            startY = pos.y;
+            
+            cropBox.classList.remove('hidden');
+            cropBox.style.left = startX + 'px';
+            cropBox.style.top = startY + 'px';
+            cropBox.style.width = '0px';
+            cropBox.style.height = '0px';
+
+            document.addEventListener('mousemove', cropMove);
+            document.addEventListener('touchmove', cropMove, {passive: false});
+            document.addEventListener('mouseup', cropEnd);
+            document.addEventListener('touchend', cropEnd);
+        }
+
+        function cropMove(e) {
+            e.preventDefault();
+            const pos = getPointerPos(e);
+            let width = pos.x - startX;
+            let height = pos.y - startY;
+            let newLeft = startX;
+            let newTop = startY;
+
+            // Allow dragging in any direction
+            if (width < 0) { newLeft = pos.x; width = Math.abs(width); }
+            if (height < 0) { newTop = pos.y; height = Math.abs(height); }
+
+            cropBox.style.left = newLeft + 'px';
+            cropBox.style.top = newTop + 'px';
+            cropBox.style.width = width + 'px';
+            cropBox.style.height = height + 'px';
+        }
+
+        function cropEnd(e) {
+            document.removeEventListener('mousemove', cropMove);
+            document.removeEventListener('touchmove', cropMove);
+            document.removeEventListener('mouseup', cropEnd);
+            document.removeEventListener('touchend', cropEnd);
+        }
+
+        function snapCrop() {
+            const rect = {
+                x: parseInt(cropBox.style.left),
+                y: parseInt(cropBox.style.top),
+                width: parseInt(cropBox.style.width),
+                height: parseInt(cropBox.style.height)
+            };
+            
+            // Validate minimal size
+            if (rect.width < 10 || rect.height < 10) {
+                alert("Selection too small!");
+                return;
+            }
+
+            capture(true, rect);
+        }
     </script>
 </body>
 </html>
