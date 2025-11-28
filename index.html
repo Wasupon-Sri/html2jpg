@@ -2,1181 +2,349 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport"
-          content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Crop Me! - Auto Center Fix</title>
-
-    <!-- Tailwind + Fonts + Font Awesome for the host app -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>VECTRA V16 | STUDIO LITE</title>
+    
+    <!-- LIBRARIES -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet"
-          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.11/html-to-image.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Outfit:wght@300;400;600;800&family=Sarabun:wght@300;400;600;800&display=swap"
-          rel="stylesheet">
-
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['Outfit', 'sans-serif'],
-                        mono: ['JetBrains Mono', 'monospace'],
-                        thai: ['Sarabun', 'sans-serif'],
-                    },
-                    cursor: { 'grab': 'grab', 'grabbing': 'grabbing' }
-                }
-            }
-        }
-    </script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@400&family=Rajdhani:wght@500;600;700&family=Orbitron:wght@500;700;900&family=Cinzel:wght@400;700&display=swap" rel="stylesheet">
 
     <style>
-        body {
-            background: linear-gradient(125deg, #ff0080, #7928ca, #41d1ff, #ffea00, #ff0080);
-            background-size: 400% 400%;
-            animation: aurora 20s ease infinite;
-            overflow: hidden;
-            overscroll-behavior: none;
+        :root {
+            --bg: #09090b;
+            --panel: #18181b;
+            --border: #27272a;
+            --accent: #3b82f6;
+            --text: #e4e4e7;
+            --text-dim: #a1a1aa;
+            --btn-bg: #27272a;
+            --active-bg: #3b82f6;
         }
 
-        @keyframes aurora {
-            0% {
-                background-position: 0% 50%;
-            }
-            50% {
-                background-position: 100% 50%;
-            }
-            100% {
-                background-position: 0% 50%;
-            }
+        body.theme-white {
+            --bg: #eef2f6;
+            --panel: #ffffff;
+            --border: #e2e8f0;
+            --accent: #d4af37;
+            --text: #1e293b;
+            --text-dim: #64748b;
+            --btn-bg: #f1f5f9;
+            --active-bg: #d4af37;
         }
 
-        .glass-panel {
-            background: rgba(255, 255, 255, 0.85);
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.6);
-            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.2);
+        body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; overflow: hidden; transition: 0.3s; }
+        body.theme-white { font-family: 'Cinzel', serif; }
+        body.theme-white .font-tech { font-family: 'Rajdhani', sans-serif; }
+
+        /* LAYOUT */
+        .app-grid { display: grid; grid-template-columns: 350px 1fr; height: 100vh; height: 100dvh; width: 100vw; overflow: hidden; }
+        .sidebar { background: var(--panel); border-right: 1px solid var(--border); display: flex; flex-direction: column; z-index: 10; overflow: hidden; }
+        .main-stage { position: relative; background: #000; overflow: hidden; display: flex; flex-direction: column; }
+
+        @media (max-width: 1024px) {
+            .app-grid { grid-template-columns: 1fr; grid-template-rows: 45% 55%; }
+            .sidebar { border-right: none; border-bottom: 1px solid var(--border); }
         }
 
-        .checkerboard {
-            background-color: #e5e5f7;
-            background-image:
-                    linear-gradient(45deg, #d4d4e8 25%, transparent 25%),
-                    linear-gradient(-45deg, #d4d4e8 25%, transparent 25%),
-                    linear-gradient(45deg, transparent 75%, #d4d4e8 75%),
-                    linear-gradient(-45deg, transparent 75%, #d4d4e8 75%);
+        /* EDITOR */
+        .editor-container { flex: 1; position: relative; min-height: 150px; }
+        textarea {
+            width: 100%; height: 100%; background: rgba(0,0,0,0.2); color: var(--text-dim);
+            border: none; padding: 1rem; resize: none; outline: none;
+            font-family: 'JetBrains Mono', monospace; font-size: 13px; line-height: 1.5;
+        }
+        body.theme-white textarea { background: #f8fafc; color: #334155; }
+
+        /* CONTROLS */
+        .controls { padding: 1.25rem; border-top: 1px solid var(--border); gap: 1.25rem; display: flex; flex-direction: column; overflow-y: auto; }
+        .label { font-size: 0.7rem; font-weight: 700; color: var(--text-dim); letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 0.5rem; display: block; }
+        
+        .btn-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; }
+        .btn-grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem; }
+        
+        .btn {
+            padding: 0.6rem; border-radius: 6px; border: 1px solid var(--border);
+            background: var(--btn-bg); color: var(--text-dim); font-size: 0.8rem; font-weight: 600;
+            cursor: pointer; transition: 0.2s; text-align: center; display: flex; align-items: center; justify-content: center;
+            font-family: 'Rajdhani', sans-serif; flex: 1;
+        }
+        .btn:hover { border-color: var(--accent); color: var(--text); }
+        .btn.active { background: var(--active-bg); border-color: var(--accent); color: #fff; box-shadow: 0 0 15px rgba(0,0,0,0.2); }
+        
+        .btn-action { background: var(--accent); color: white; border: none; padding: 0.85rem; font-size: 1rem; font-weight: 700; letter-spacing: 1px; cursor: pointer; border-radius: 6px; }
+        .btn-action:hover { filter: brightness(1.1); transform: translateY(-1px); }
+
+        /* PREVIEW AREA */
+        .preview-header {
+            height: 50px; background: var(--panel); border-bottom: 1px solid var(--border);
+            display: flex; align-items: center; justify-content: space-between; padding: 0 1rem; flex-shrink: 0;
+        }
+        .preview-wrapper {
+            flex: 1; overflow: auto; 
+            background-color: var(--bg);
+            background-image: 
+                linear-gradient(45deg, rgba(128,128,128,0.05) 25%, transparent 25%), 
+                linear-gradient(-45deg, rgba(128,128,128,0.05) 25%, transparent 25%), 
+                linear-gradient(45deg, transparent 75%, rgba(128,128,128,0.05) 75%), 
+                linear-gradient(-45deg, transparent 75%, rgba(128,128,128,0.05) 75%);
             background-size: 20px 20px;
+            display: flex; justify-content: center; align-items: flex-start; padding: 40px;
+            -webkit-overflow-scrolling: touch; 
         }
+        
+        /* FRAME CONTAINER */
+        #iframeContainer {
+            transform-origin: top center; transition: transform 0.2s ease-out;
+            box-shadow: 0 20px 50px -10px rgba(0, 0, 0, 0.5); background: white;
+        }
+        iframe { border: none; background: white; display: block; }
+        
+        /* Range Slider */
+        input[type=range] { -webkit-appearance: none; background: transparent; height: 24px; }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 20px; width: 20px; border-radius: 50%; background: var(--accent); margin-top: -8px; cursor: pointer; box-shadow: 0 0 5px rgba(0,0,0,0.5); }
+        input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 4px; cursor: pointer; background: var(--border); border-radius: 2px; }
 
-        .no-scrollbar::-webkit-scrollbar {
-            display: none;
-        }
-
-        .no-scrollbar {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
-        }
-
-        /* Controls */
-        input[type=range] {
-            -webkit-appearance: none;
-            width: 100%;
-            background: transparent;
-        }
-
-        input[type=range]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            height: 16px;
-            width: 16px;
-            border-radius: 50%;
-            background: #FF0080;
-            cursor: pointer;
-            margin-top: -6px;
-            box-shadow: 0 0 10px rgba(255, 0, 128, 0.5);
-            transition: transform 0.1s;
-        }
-
-        input[type=range]::-webkit-slider-thumb:hover {
-            transform: scale(1.2);
-        }
-
-        input[type=range]::-webkit-slider-runnable-track {
-            width: 100%;
-            height: 4px;
-            cursor: pointer;
-            background: rgba(0, 0, 0, 0.1);
-            border-radius: 999px;
-        }
-
-        .custom-scrollbar::-webkit-scrollbar {
-            width: 4px;
-        }
-
-        .custom-scrollbar::-webkit-scrollbar-track {
-            background: transparent;
-        }
-
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-            background: rgba(0, 0, 0, 0.2);
-            border-radius: 10px;
-        }
-
-        #crop-overlay {
-            cursor: crosshair;
-        }
-
-        .crop-selection {
-            border: 2px dashed #fff;
-            background: rgba(255, 255, 255, 0.2);
-            box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.6);
-            position: absolute;
-            pointer-events: none;
-            z-index: 50;
-        }
-
-        /* Default Wrapper Styling: Glass + Dots (Shows when input is clear or transparent) */
-        #capture-wrapper {
-            background-color: rgba(255, 255, 255, 0.6);
-            background-image: radial-gradient(#94a3b8 1.5px, transparent 1.5px);
-            background-size: 24px 24px;
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.5);
-            position: relative;
-            transition: all 0.3s;
-            overflow: hidden;
-        }
-
-        /* Safe Mode Override */
-        #capture-wrapper.safe-mode {
-            background: #ffffff !important;
-            backdrop-filter: none !important;
-            border: 1px solid #e2e8f0 !important;
-        }
-
-        #capture-wrapper.safe-mode * {
-            backdrop-filter: none !important;
-            -webkit-backdrop-filter: none !important;
-        }
+        /* SCROLLBARS */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
     </style>
 </head>
-<body class="h-[100dvh] w-screen flex flex-col relative text-gray-800 overflow-hidden">
+<body>
 
-<div class="flex-1 relative overflow-hidden flex">
-    <div id="canvas-scroller"
-         class="flex-1 h-full w-full overflow-auto checkerboard relative cursor-grab active:cursor-grabbing no-scrollbar">
-        <div class="min-w-max min-h-max p-[150vh] flex items-center justify-center">
-            <div id="capture-wrapper"
-                 class="shadow-2xl relative transition-all duration-300 origin-center group"
-                 style="width: 960px; min-height: 600px;">
-                <!-- Force centering of user content -->
-                <div id="user-content"
-                     class="w-full h-full min-h-[600px] flex flex-col items-center justify-center"></div>
-                <div
-                    class="absolute -top-8 left-0 text-xs font-mono font-bold text-gray-500 opacity-0 group-hover:opacity-100 transition-opacity bg-white/90 backdrop-blur px-3 py-1 rounded shadow-sm pointer-events-none">
-                    <span id="debug-width">960</span>px
+    <div class="app-grid">
+        <!-- SIDEBAR -->
+        <div class="sidebar">
+            <div class="p-4 border-b border-[var(--border)] flex justify-between items-center shrink-0">
+                <h1 class="text-lg font-black italic tracking-wider font-[Orbitron] body.theme-white:font-[Cinzel] text-[var(--accent)]">
+                    VECTRA <span class="text-[10px] opacity-50 ml-1 not-italic font-mono text-[var(--text)]">STUDIO v16</span>
+                </h1>
+                <button onclick="toggleTheme()" class="text-[var(--text-dim)] hover:text-[var(--accent)] transition"><i id="themeIcon" class="fa-solid fa-moon"></i></button>
+            </div>
+            
+            <div class="editor-container">
+                <textarea id="htmlInput" placeholder="<!-- Paste your HTML code here -->" spellcheck="false"></textarea>
+                <div class="absolute bottom-3 right-3 flex gap-2">
+                    <button onclick="pasteCode()" class="bg-[var(--btn-bg)] border border-[var(--border)] text-[var(--accent)] px-3 py-1.5 rounded text-xs font-bold hover:bg-[var(--accent)] hover:text-white transition tracking-wider shadow-lg">PASTE</button>
+                    <button onclick="clearEditor()" class="bg-[var(--btn-bg)] border border-[var(--border)] text-red-400 px-3 py-1.5 rounded text-xs font-bold hover:bg-red-500 hover:text-white transition tracking-wider shadow-lg">WIPE</button>
                 </div>
             </div>
-        </div>
-    </div>
 
-    <!-- Settings Panel -->
-    <div id="settings-panel"
-         class="absolute top-6 left-6 z-[40] w-[90vw] max-w-[320px] glass-panel rounded-2xl flex flex-col max-h-[85vh] shadow-2xl transition-shadow duration-300">
-        <div id="panel-header"
-             class="p-3 border-b border-white/40 flex justify-between items-center cursor-move select-none bg-white/20 rounded-t-2xl active:bg-white/40 transition-colors">
-            <div class="flex items-center gap-2 pointer-events-none">
-                <div
-                    class="w-6 h-6 rounded-full bg-gradient-to-br from-pink-500 to-yellow-500 flex items-center justify-center text-white font-bold text-xs shadow-md">
-                    <i class="fa-solid fa-crop-simple"></i>
+            <div class="controls custom-scrollbar">
+                
+                <!-- Dimensions -->
+                <div>
+                    <div class="flex justify-between mb-2">
+                        <span class="label">BASE WIDTH</span>
+                        <span id="widthVal" class="text-xs font-mono text-[var(--accent)]">1920px</span>
+                    </div>
+                    <input type="range" id="widthSlider" min="300" max="4000" step="10" value="1920" class="w-full mb-3">
+                    
+                    <span class="label mt-4">PRESETS</span>
+                    <div class="btn-grid-4 mb-2">
+                        <button class="btn" onclick="setWidth(375)">375</button>
+                        <button class="btn" onclick="setWidth(430)">430</button>
+                        <button class="btn" onclick="setWidth(768)">768</button>
+                        <button class="btn" onclick="setWidth(1024)">1024</button>
+                    </div>
+                    <div class="btn-grid-4">
+                        <button class="btn" onclick="setWidth(1280)">1280</button>
+                        <button class="btn" onclick="setWidth(1440)">1440</button>
+                        <button class="btn active" onclick="setWidth(1920)">1920</button>
+                        <button class="btn" onclick="setWidth(3840)">4K</button>
+                    </div>
+                    <p class="text-[10px] text-[var(--text-dim)] mt-2 leading-tight">Sets the HTML viewport width.</p>
                 </div>
-                <h2 class="font-bold text-sm text-slate-800 tracking-tight">Crop Me!</h2>
-            </div>
-            <div class="flex gap-2">
-                <button onclick="centerScroll()" title="Re-Center View"
-                        class="w-6 h-6 rounded-full hover:bg-blue-100 text-blue-600 flex items-center justify-center transition-colors cursor-pointer"
-                        onmousedown="event.stopPropagation()">
-                    <i class="fa-solid fa-crosshairs text-xs"></i>
-                </button>
-                <button onclick="togglePanel()"
-                        class="w-6 h-6 rounded-full hover:bg-black/10 flex items-center justify-center transition-colors cursor-pointer"
-                        onmousedown="event.stopPropagation()">
-                    <i id="panel-chevron"
-                       class="fa-solid fa-chevron-down text-xs transition-transform"></i>
-                </button>
-            </div>
-        </div>
 
-        <div id="panel-content" class="p-4 overflow-y-auto custom-scrollbar space-y-5">
-            <!-- Canvas Width -->
-            <div class="space-y-2">
-                <div class="flex justify-between items-end">
-                    <label
-                        class="text-[10px] font-bold uppercase text-slate-500 tracking-wider">Canvas
-                        Width</label>
-                    <span id="width-val"
-                          class="text-[10px] font-mono font-bold bg-slate-100 px-1.5 py-0.5 rounded text-slate-600">960px</span>
-                </div>
-                <div class="flex gap-2 items-center">
-                    <input type="range" id="width-slider" min="300" max="3000" value="960"
-                           class="flex-1">
-                    <button onclick="autoFit()" title="Fit to Content"
-                            class="w-6 h-6 flex items-center justify-center rounded-md bg-white border border-gray-200 hover:bg-blue-50 text-blue-600 transition-colors shadow-sm">
-                        <i class="fa-solid fa-expand text-[10px]"></i>
+                <!-- Actions -->
+                <div class="pt-2 mt-auto pb-4">
+                    <button class="btn-action w-full shadow-lg flex items-center justify-center gap-2" onclick="openPreviewTab()">
+                        <i class="fa-solid fa-external-link-alt"></i> OPEN IN NEW TAB
                     </button>
+                    <p class="text-[10px] text-center text-[var(--text-dim)] mt-2">For saving: Open New Tab &rarr; Print to PDF or Screenshot.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- MAIN STAGE (Preview) -->
+        <div class="main-stage">
+            <div class="preview-header">
+                <div class="flex items-center gap-3 overflow-hidden">
+                    <span class="text-xs font-bold text-[var(--accent)] tracking-widest whitespace-nowrap">LIVE PREVIEW</span>
+                </div>
+                
+                <!-- Zoom -->
+                <div class="flex items-center gap-1 bg-[var(--btn-bg)] rounded border border-[var(--border)] p-0.5 shrink-0">
+                    <button onclick="adjustZoom(-0.1)" class="w-7 h-7 flex items-center justify-center text-[var(--text-dim)] hover:text-[var(--text)]"><i class="fa-solid fa-minus text-[10px]"></i></button>
+                    <span id="zoomLabel" class="text-[10px] font-mono w-10 text-center text-[var(--accent)]">Fit</span>
+                    <button onclick="adjustZoom(0.1)" class="w-7 h-7 flex items-center justify-center text-[var(--text-dim)] hover:text-[var(--text)]"><i class="fa-solid fa-plus text-[10px]"></i></button>
                 </div>
             </div>
 
-            <!-- Zoom / Scale -->
-            <div class="space-y-2">
-                <div class="flex justify-between items-end">
-                    <label
-                        class="text-[10px] font-bold uppercase text-slate-500 tracking-wider">Zoom
-                        / Scale</label>
-                    <div id="quality-badge"
-                         class="text-[9px] font-bold bg-gradient-to-r from-purple-500 to-pink-500 text-white px-1.5 py-0.5 rounded-full shadow-sm">
-                        4K ULTRA
-                    </div>
-                </div>
-                <div class="flex gap-2 items-center">
-                    <input type="range" id="zoom-slider" min="1" max="10" step="0.1" value="4"
-                           class="flex-1">
-                    <span id="zoom-val"
-                          class="text-[10px] font-mono font-bold w-8 text-right">4.0x</span>
-                </div>
-                <div class="text-[9px] text-center text-slate-400 font-mono">
-                    Output:
-                    <span id="calc-res">3840 x Auto</span> px
-                </div>
-            </div>
-
-            <!-- Safe Mode -->
-            <div class="space-y-2">
-                <div
-                    class="flex items-center justify-between bg-indigo-50 p-2.5 rounded-lg border border-indigo-100">
-                    <div class="flex flex-col">
-                        <span class="text-xs font-bold text-indigo-900">✨ Safe Mode</span>
-                        <span class="text-[9px] text-indigo-600 font-medium">Remove
-                            Glass/Dots</span>
-                    </div>
-                    <label class="relative inline-flex items-center cursor-pointer">
-                        <input type="checkbox" id="safe-mode-toggle" class="sr-only peer"
-                               onchange="toggleSafeMode()">
-                        <div
-                            class="w-9 h-5 bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
-                    </label>
-                </div>
-            </div>
-
-            <!-- HTML Input / Auto Fix -->
-            <div class="space-y-2">
-                <div class="flex justify-between items-center">
-                    <div class="flex items-center gap-2">
-                        <label
-                            class="text-[10px] font-bold uppercase text-slate-500 tracking-wider">HTML</label>
-                        <span id="fix-indicator"
-                              class="hidden text-amber-600 bg-amber-100 px-1.5 py-0.5 rounded text-[9px] font-bold animate-pulse">Issues</span>
-                    </div>
-                    <div class="flex gap-1">
-                        <button id="auto-fix-btn" onclick="autoFixHTML()"
-                                class="text-[9px] bg-gradient-to-r from-amber-200 to-yellow-400 text-amber-900 hover:from-amber-300 hover:to-yellow-500 px-2 py-1 rounded transition font-bold shadow-sm"
-                                title="Auto-Fix Layout">
-                            <i class="fa-solid fa-wand-magic-sparkles"></i> Auto Fix
-                        </button>
-                        <button onclick="pasteCode()"
-                                class="text-[9px] bg-indigo-100 text-indigo-600 hover:bg-indigo-200 px-2 py-1 rounded transition font-bold"
-                                title="Paste">
-                            <i class="fa-solid fa-paste"></i>
-                        </button>
-                        <button onclick="clearCode()"
-                                class="text-[9px] bg-red-100 text-red-600 hover:bg-red-200 px-2 py-1 rounded transition">
-                            Clear
-                        </button>
-                    </div>
-                </div>
-                <textarea id="code-input"
-                          class="w-full h-28 p-2 font-mono text-[10px] bg-slate-900 text-green-400 rounded-xl resize-y focus:outline-none focus:ring-2 focus:ring-pink-500 shadow-inner leading-relaxed custom-scrollbar"
-                          spellcheck="false"
-                          placeholder="<h1>Paste HTML here...</h1>"></textarea>
-            </div>
-
-            <!-- Upload + Preview -->
-            <div class="grid grid-cols-2 gap-2 pt-1">
-                <label
-                    class="cursor-pointer flex items-center justify-center gap-2 bg-white hover:bg-gray-50 border border-gray-200 text-slate-700 py-2 rounded-lg text-xs font-bold transition-all shadow-sm active:scale-95">
-                    <i class="fa-solid fa-upload"></i> Upload
-                    <input type="file" id="file-upload" accept=".html,.txt" class="hidden">
-                </label>
-                <button onclick="openNewTab()"
-                        class="flex items-center justify-center gap-2 bg-white hover:bg-gray-50 border border-gray-200 text-slate-700 py-2 rounded-lg text-xs font-bold transition-all shadow-sm active:scale-95">
-                    <i class="fa-solid fa-arrow-up-right-from-square"></i> Preview
-                </button>
-            </div>
-
-            <!-- Crop / Capture -->
-            <div class="pt-2 border-t border-white/40">
-                <div class="grid grid-cols-2 gap-2">
-                    <button onclick="startCropMode()"
-                            class="group relative overflow-hidden flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white py-2.5 rounded-lg text-xs font-bold transition-all shadow-lg shadow-indigo-500/30 active:scale-95">
-                        <span class="relative z-10 flex items-center gap-2">
-                            <i class="fa-solid fa-crop-simple"></i> Crop
-                        </span>
-                    </button>
-                    <button onclick="capture(false)"
-                            class="group relative overflow-hidden flex items-center justify-center gap-2 bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-700 hover:to-purple-700 text-white py-2.5 rounded-lg text-xs font-bold transition-all shadow-lg shadow-pink-500/30 active:scale-95">
-                        <span class="relative z-10 flex items-center gap-2">
-                            <i class="fa-solid fa-camera"></i> Capture
-                        </span>
-                    </button>
+            <div class="preview-wrapper" id="viewport">
+                <div id="iframeContainer">
+                    <iframe id="previewFrame" scrolling="no"></iframe>
                 </div>
             </div>
         </div>
     </div>
-</div>
 
-<!-- Crop Toolbar & Overlay -->
-<div id="crop-toolbar"
-     class="fixed top-6 left-1/2 -translate-x-1/2 bg-white rounded-full shadow-2xl px-6 py-3 flex gap-4 items-center z-[70] animate-bounce-in hidden">
-    <span class="text-sm font-bold text-gray-600 mr-2">
-        <i class="fa-solid fa-scissors mr-1"></i> Draw box to snap
-    </span>
-    <button onclick="cancelCrop()"
-            class="text-sm font-bold text-gray-500 hover:text-gray-800 transition">
-        Cancel
-    </button>
-    <div class="h-4 w-[1px] bg-gray-300"></div>
-    <button onclick="snapCrop()"
-            class="text-sm font-bold text-white bg-black hover:bg-gray-800 px-4 py-1.5 rounded-full shadow-md transition transform active:scale-95">
-        Snap!
-    </button>
-</div>
+    <script>
+        // --- STATE ---
+        let state = {
+            width: 1920,
+            zoom: 1.0,
+            theme: 'galaxy'
+        };
 
-<div id="crop-overlay"
-     class="fixed inset-0 z-50 hidden select-none touch-none bg-black/30">
-    <div id="crop-box" class="crop-selection hidden"></div>
-</div>
+        // --- DOM ELEMENTS ---
+        const els = {
+            editor: document.getElementById('htmlInput'),
+            iframe: document.getElementById('previewFrame'),
+            container: document.getElementById('iframeContainer'),
+            viewport: document.getElementById('viewport'),
+            widthSlider: document.getElementById('widthSlider'),
+            widthVal: document.getElementById('widthVal'),
+            zoomLabel: document.getElementById('zoomLabel'),
+        };
 
-<!-- Loader -->
-<div id="loader"
-     class="fixed inset-0 z-[60] bg-black/90 backdrop-blur-md flex flex-col items-center justify-center hidden">
-    <div class="relative w-24 h-24 mb-8">
-        <div class="absolute inset-0 border-t-4 border-pink-500 rounded-full animate-spin"></div>
-        <div class="absolute inset-2 border-t-4 border-cyan-400 rounded-full animate-spin"
-             style="animation-duration: 1.5s; animation-direction: reverse;"></div>
-        <div class="absolute inset-4 border-t-4 border-yellow-400 rounded-full animate-spin"
-             style="animation-duration: 2s;"></div>
-    </div>
-    <h3 class="text-white text-3xl font-bold tracking-widest animate-pulse">
-        RENDERING
-    </h3>
-    <p id="loader-status"
-       class="text-gray-400 font-mono text-sm mt-2">
-        Generating High-Res Pixels...
-    </p>
-</div>
-
-<!-- Recenter FAB -->
-<button onclick="centerScroll()"
-        class="fixed bottom-6 right-6 z-40 bg-white text-slate-700 p-3 rounded-full shadow-lg hover:bg-slate-50 transition-all active:scale-95"
-        title="Re-Center View">
-    <i class="fa-solid fa-crosshairs"></i>
-</button>
-
-<script>
-    // === DOM References ===
-    const codeInput = document.getElementById('code-input');
-    const userContent = document.getElementById('user-content');
-    const captureWrapper = document.getElementById('capture-wrapper');
-    const canvasScroller = document.getElementById('canvas-scroller');
-    const widthSlider = document.getElementById('width-slider');
-    const widthVal = document.getElementById('width-val');
-    const debugWidth = document.getElementById('debug-width');
-    const zoomSlider = document.getElementById('zoom-slider');
-    const zoomVal = document.getElementById('zoom-val');
-    const calcRes = document.getElementById('calc-res');
-    const loader = document.getElementById('loader');
-    const panel = document.getElementById('settings-panel');
-    const panelHeader = document.getElementById('panel-header');
-    const panelContent = document.getElementById('panel-content');
-    const panelChevron = document.getElementById('panel-chevron');
-    const qualityBadge = document.getElementById('quality-badge');
-    const cropOverlay = document.getElementById('crop-overlay');
-    const cropBox = document.getElementById('crop-box');
-    const cropToolbar = document.getElementById('crop-toolbar');
-    const fixIndicator = document.getElementById('fix-indicator');
-    const fixBtn = document.getElementById('auto-fix-btn');
-
-    let isPanelOpen = true;
-    let isCropping = false;
-    let isPanning = false;
-    let startX, startY;
-
-    const defaultHTML = `<div class="w-full h-full min-h-[600px] flex items-center justify-center p-12">
-  <div class="relative group">
-    <div class="absolute -inset-1 bg-gradient-to-r from-pink-600 to-purple-600 rounded-2xl blur opacity-25 group-hover:opacity-75 transition duration-1000 group-hover:duration-200"></div>
-    <div class="relative px-7 py-6 bg-white ring-1 ring-gray-900/5 rounded-2xl leading-none flex items-top justify-start space-x-6">
-      <div class="space-y-2">
-        <div class="flex items-center gap-3">
-          <span class="text-3xl">🚀</span>
-          <p class="text-slate-800 text-2xl font-bold font-sans">Crop Me!</p>
-        </div>
-        <p class="text-slate-600 max-w-sm text-base leading-relaxed">
-          Glass background is ON. Content sits <span class="font-bold text-pink-600">on top</span>.
-        </p>
-      </div>
-    </div>
-  </div>
-</div>`;
-
-    // === Startup: load sample, compute, force center ===
-    window.addEventListener('DOMContentLoaded', () => {
-        loadSample();
-        updateCalculations();
-
-        // Center a few times to guarantee correct scroll position
-        centerScroll();
-        requestAnimationFrame(centerScroll);
-        setTimeout(centerScroll, 500);
-    });
-
-    // --- Centering ---
-    function centerScroll() {
-        const scroller = canvasScroller;
-        scroller.scrollLeft = (scroller.scrollWidth - scroller.clientWidth) / 2;
-        scroller.scrollTop = (scroller.scrollHeight - scroller.clientHeight) / 2;
-    }
-
-    // --- Panning Logic ---
-    let panStartX, panStartY, panScrollLeft, panScrollTop;
-
-    canvasScroller.addEventListener('mousedown', (e) => {
-        if (isCropping || e.target.closest('input') || e.target.closest('button')) return;
-        isPanning = true;
-        canvasScroller.classList.add('cursor-grabbing');
-        canvasScroller.classList.remove('cursor-grab');
-        panStartX = e.pageX - canvasScroller.offsetLeft;
-        panStartY = e.pageY - canvasScroller.offsetTop;
-        panScrollLeft = canvasScroller.scrollLeft;
-        panScrollTop = canvasScroller.scrollTop;
-    });
-
-    canvasScroller.addEventListener('mouseleave', () => {
-        isPanning = false;
-        canvasScroller.classList.remove('cursor-grabbing');
-        canvasScroller.classList.add('cursor-grab');
-    });
-
-    canvasScroller.addEventListener('mouseup', () => {
-        isPanning = false;
-        canvasScroller.classList.remove('cursor-grabbing');
-        canvasScroller.classList.add('cursor-grab');
-    });
-
-    canvasScroller.addEventListener('mousemove', (e) => {
-        if (!isPanning) return;
-        e.preventDefault();
-        const x = e.pageX - canvasScroller.offsetLeft;
-        const y = e.pageY - canvasScroller.offsetTop;
-        const walkX = 1.5 * (x - panStartX);
-        const walkY = 1.5 * (y - panStartY);
-        canvasScroller.scrollLeft = panScrollLeft - walkX;
-        canvasScroller.scrollTop = panScrollTop - walkY;
-    });
-
-    // --- Panel Drag ---
-    let isDragging = false, initialX, initialY, xOffset = 0, yOffset = 0;
-
-    panelHeader.addEventListener("mousedown", dragStart);
-    document.addEventListener("mousemove", drag);
-    document.addEventListener("mouseup", dragEnd);
-
-    panelHeader.addEventListener("touchstart", dragStart, { passive: false });
-    document.addEventListener("touchmove", drag, { passive: false });
-    document.addEventListener("touchend", dragEnd);
-
-    function dragStart(e) {
-        if (e.target.closest('button')) return;
-
-        if (e.type === "touchstart") {
-            initialX = e.touches[0].clientX - xOffset;
-            initialY = e.touches[0].clientY - yOffset;
-        } else {
-            initialX = e.clientX - xOffset;
-            initialY = e.clientY - yOffset;
-        }
-
-        if (e.target === panelHeader || panelHeader.contains(e.target)) {
-            isDragging = true;
-            panel.classList.add("shadow-2xl", "scale-[1.01]");
-        }
-    }
-
-    function drag(e) {
-        if (!isDragging) return;
-        e.preventDefault();
-
-        let currentX, currentY;
-
-        if (e.type === "touchmove") {
-            currentX = e.touches[0].clientX - initialX;
-            currentY = e.touches[0].clientY - initialY;
-        } else {
-            currentX = e.clientX - initialX;
-            currentY = e.clientY - initialY;
-        }
-
-        xOffset = currentX;
-        yOffset = currentY;
-
-        setTranslate(currentX, currentY, panel);
-    }
-
-    function setTranslate(xPos, yPos, el) {
-        el.style.transform = `translate3d(${xPos}px, ${yPos}px, 0)`;
-    }
-
-    function dragEnd() {
-        initialX = xOffset;
-        initialY = yOffset;
-        isDragging = false;
-        panel.classList.remove("shadow-2xl", "scale-[1.01]");
-    }
-
-    // --- Main: load / preview / health check ---
-    function loadSample() {
-        codeInput.value = defaultHTML;
-        updatePreview();
-        checkCodeHealth();
-    }
-
-    function clearCode() {
-        codeInput.value = '';
-        updatePreview();
-        checkCodeHealth();
-    }
-
-    async function pasteCode() {
-        try {
-            const txt = await navigator.clipboard.readText();
-            codeInput.value = txt;
+        // --- INIT ---
+        window.onload = () => {
             updatePreview();
-            checkCodeHealth();
-            setTimeout(centerScroll, 100);
-        } catch (err) {
-            alert('Browser blocked automatic paste.');
-        }
-    }
+            window.addEventListener('resize', fitToScreen);
+        };
 
-    function updatePreview() {
-        userContent.innerHTML = codeInput.value;
-    }
+        // --- LOGIC ---
+        els.editor.addEventListener('input', debounce(updatePreview, 400));
+        els.widthSlider.addEventListener('input', (e) => setWidth(parseInt(e.target.value)));
 
-    // Simple health heuristic: warn if not fixed-width & nowrap header
-    function checkCodeHealth() {
-        const val = codeInput.value;
-        if (!val) {
-            fixIndicator.classList.add('hidden');
-            return;
-        }
-
-        let issues = false;
-        if (val.includes('<body') && !val.includes('min-w-[')) issues = true;
-        if (!val.includes('<body') && !val.includes('min-w-[')) issues = true;
-        if (val.includes('w-fit')) issues = true;
-        if (val.includes('<h1') && !val.includes('whitespace-nowrap')) issues = true;
-
-        if (issues) {
-            fixIndicator.classList.remove('hidden');
-            fixBtn.classList.add('animate-pulse', 'ring-2', 'ring-amber-400');
-        } else {
-            fixIndicator.classList.add('hidden');
-            fixBtn.classList.remove('animate-pulse', 'ring-2', 'ring-amber-400');
-        }
-    }
-
-    // === NEW: Auto Fix – rewrite arbitrary HTML into fixed-width nephrotic layout ===
-
-    function autoFixHTML() {
-        let src = codeInput.value.trim();
-        if (!src) return;
-
-        // If user pasted only a fragment (no <html>), wrap into full document
-        if (!/<!doctype html>/i.test(src) && !/<html[\s>]/i.test(src)) {
-            src = `<!DOCTYPE html><html><head></head><body>${src}</body></html>`;
-        }
-
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(src, "text/html");
-
-        // Cache original info before rebuild
-        const originalTitle = (doc.querySelector("title")?.textContent || "").trim();
-        const firstH1 = doc.querySelector("h1");
-        const h1HTML = firstH1 ? firstH1.innerHTML.trim() :
-            (originalTitle || "Document");
-
-        const originalBody = doc.body || doc.createElement("body");
-        const originalChildren = Array.from(originalBody.children);
-
-        // Detect 3-column grid
-        const grid = originalBody.querySelector(".grid.grid-cols-3, .grid");
-        const gridCols = grid ? Array.from(grid.children) : [];
-
-        // Content outside the grid (for fallback)
-        const otherContent = originalChildren.filter(el => el !== grid && !el.contains(grid));
-
-        // Rebuild head & body
-        rebuildHead(doc, h1HTML, originalTitle);
-        rebuildBody(doc, h1HTML, gridCols, otherContent);
-
-        const serializer = new XMLSerializer();
-        let fixed = "<!DOCTYPE html>\n" + serializer.serializeToString(doc.documentElement);
-
-        // Clean up self-closing meta/link endings from XMLSerializer
-        fixed = fixed.replace(/<\/(meta|link|br|hr)>/gi, "");
-
-        codeInput.value = fixed;
-        updatePreview();
-        checkCodeHealth();
-
-        // Button feedback
-        const prev = fixBtn.innerHTML;
-        fixBtn.innerHTML = '<i class="fa-solid fa-check"></i> Fixed!';
-        fixBtn.classList.remove("animate-pulse", "ring-2", "ring-amber-400");
-        setTimeout(() => {
-            fixBtn.innerHTML = prev;
-        }, 2000);
-    }
-
-    function rebuildHead(doc, h1HTML, originalTitle) {
-        const html = doc.documentElement;
-        let head = doc.head;
-        if (!head) {
-            head = doc.createElement("head");
-            html.insertBefore(head, html.firstChild);
-        }
-
-        const h1Text = stripTags(h1HTML);
-        let finalTitle = h1Text || originalTitle || "Document";
-        if (!/fixed width header/i.test(finalTitle)) {
-            finalTitle += " - Fixed Width Header";
-        }
-
-        head.innerHTML = `
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>${escapeHtml(finalTitle)}</title>
-
-        <script src="https://cdn.tailwindcss.com"><\/script>
-        <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-        <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;800&display=swap" rel="stylesheet">
-
-        <style>
-            body {
-                font-family: 'Sarabun', sans-serif;
-                background-color: #f0f4f8;
-                background-image: radial-gradient(#cbd5e1 1px, transparent 1px);
-                background-size: 24px 24px;
-            }
-            .gradient-text {
-                background-clip: text;
-                -webkit-background-clip: text;
-                color: transparent;
-            }
-            .row-grid {
-                display: grid;
-                grid-template-columns: auto 1fr;
-                gap: 0.5rem;
-                align-items: center;
-            }
-        </style>
-      `;
-    }
-
-    function rebuildBody(doc, h1HTML, gridCols, otherContent) {
-        const html = doc.documentElement;
-        let body = doc.body;
-        if (!body) {
-            body = doc.createElement("body");
-            html.appendChild(body);
-        }
-
-        // Clear existing body
-        body.innerHTML = "";
-        body.className = "min-h-screen py-8 px-8 flex flex-col items-center justify-center min-w-[1000px]";
-
-        // Header
-        const headerOuter = doc.createElement("div");
-        headerOuter.className = "w-full flex justify-center mb-8";
-
-        const headerInner = doc.createElement("div");
-        headerInner.className = "bg-white/90 backdrop-blur-md py-5 rounded-2xl shadow-lg border border-white/50 ring-1 ring-slate-200/50 w-[750px] text-center mx-auto";
-
-        const h1 = doc.createElement("h1");
-        h1.className = "text-3xl font-black uppercase tracking-tight bg-gradient-to-r from-slate-700 to-slate-900 gradient-text m-0 whitespace-nowrap";
-        h1.innerHTML = h1HTML || "Title";
-
-        headerInner.appendChild(h1);
-        headerOuter.appendChild(headerInner);
-        body.appendChild(headerOuter);
-
-        // Content
-        if (gridCols.length === 3) {
-            const gridWrapper = doc.createElement("div");
-            gridWrapper.className = "w-full max-w-6xl grid grid-cols-3 gap-6 items-start";
-
-            gridCols.forEach((origCol, idx) => {
-                const col = origCol.cloneNode(true);
-                normalizeColumn(doc, col, idx);
-                gridWrapper.appendChild(col);
+        function setWidth(val) {
+            state.width = val;
+            els.widthSlider.value = val;
+            els.widthVal.innerText = val + 'px';
+            
+            // Update active class on buttons
+            document.querySelectorAll('.btn-grid-4 .btn').forEach(btn => {
+                if (parseInt(btn.innerText.replace('4K','3840')) === val) btn.classList.add('active');
+                else btn.classList.remove('active');
             });
 
-            body.appendChild(gridWrapper);
-        } else {
-            // Fallback: arbitrary HTML wrapped in neutral fixed-width card
-            const wrapper = doc.createElement("div");
-            wrapper.className = "w-full max-w-6xl mt-6";
-
-            const card = doc.createElement("div");
-            card.className = "bg-white rounded-xl overflow-hidden shadow-xl border border-slate-100 p-6";
-
-            otherContent.forEach(el => {
-                card.appendChild(doc.importNode(el, true));
-            });
-
-            wrapper.appendChild(card);
-            body.appendChild(wrapper);
+            updatePreview();
         }
-    }
 
-    function normalizeColumn(doc, col, index) {
-        const color = detectColumnColor(col) ||
-            (index === 0 ? "orange" : index === 1 ? "yellow" : "blue");
-
-        const cls = Array.from(col.classList);
-        const borderClasses = cls.filter(c => c === "border" || c.startsWith("border-"));
-        col.className = [
-            "flex flex-col bg-white rounded-xl overflow-hidden shadow-xl h-full",
-            ...borderClasses
-        ].join(" ").trim();
-
-        const children = Array.from(col.children);
-        const header = children[0];
-        const bubble = children[1];
-        const list = children[2];
-
-        if (header) normalizeColumnHeader(header);
-        if (bubble) normalizeBubble(bubble, color);
-        if (list) normalizeList(list, color);
-    }
-
-    function normalizeColumnHeader(header) {
-        const cls = Array.from(header.classList);
-        const gradient = cls.filter(c =>
-            c === "bg-gradient-to-br" ||
-            c.startsWith("from-") ||
-            c.startsWith("via-") ||
-            c.startsWith("to-")
-        );
-
-        header.className = [
-            ...gradient,
-            "p-5",
-            "text-center",
-            "text-white",
-            "shadow-md",
-            "relative",
-            "overflow-hidden"
-        ].join(" ");
-
-        const h2 = header.querySelector("h2");
-        if (h2) {
-            h2.className = "text-2xl font-black uppercase tracking-wide drop-shadow-md";
+        function toggleTheme() {
+            state.theme = state.theme === 'galaxy' ? 'white' : 'galaxy';
+            document.body.className = state.theme === 'galaxy' ? '' : 'theme-white';
+            document.getElementById('themeIcon').className = state.theme === 'galaxy' ? 'fa-solid fa-moon' : 'fa-solid fa-sun';
         }
-        const p = header.querySelector("p");
-        if (p) {
-            p.className = "text-xs font-medium opacity-90 uppercase tracking-wider";
-        }
-    }
 
-    function normalizeBubble(bubble, color) {
-        const baseBg = color === "orange" ? "bg-orange-50"
-            : color === "yellow" ? "bg-yellow-50"
-                : color === "blue" ? "bg-blue-50"
-                    : "bg-slate-50";
+        // --- HTML GENERATOR ---
+        function getHTML(width) {
+            const raw = els.editor.value;
+            
+            // Base CSS: White background, no scrollbars, content flows naturally
+            let css = `
+                * { box-sizing: border-box; }
+                body { margin: 0; padding: 0; background: white; overflow-x: hidden; width: ${width}px; min-height: 100vh; }
+                img { max-width: 100%; height: auto; display: block; }
+                ::-webkit-scrollbar { display: none; }
+            `;
 
-        const baseBorder = color === "orange" ? "border-orange-100"
-            : color === "yellow" ? "border-yellow-100"
-                : color === "blue" ? "border-blue-100"
-                    : "border-slate-100";
+            // Tailwind Config Extractor
+            let headContent = '';
+            let bodyContent = raw;
+            let userConfigScript = '';
 
-        bubble.className = `${baseBg} p-5 border-b ${baseBorder} text-center relative overflow-hidden`;
-
-        const p = bubble.querySelector("p");
-        if (p) {
-            const keep = Array.from(p.classList)
-                .filter(c => c !== "leading-snug" && !/^text-\[/.test(c));
-            p.className = `${keep.join(" ")} text-lg font-bold leading-relaxed relative z-10`.trim();
-        }
-    }
-
-    function normalizeList(list, color) {
-        list.className = "flex-grow bg-white p-4 space-y-2";
-
-        const rows = Array.from(list.children).filter(n => n.nodeType === 1);
-        rows.forEach(row => {
-            const cl = row.classList;
-
-            // Remove old flex layout classes
-            cl.remove("flex", "flex-col", "sm:flex-row", "sm:justify-between", "items-start", "sm:items-center");
-
-            const hasBgHighlight = Array.from(cl).some(c => c.startsWith("bg-"));
-            const hasBorderL2 = cl.contains("border-l-2");
-
-            cl.add("row-grid", "p-2", "rounded");
-
-            if (hasBorderL2) {
-                cl.remove("border-l-2");
-                cl.add("border-l-4");
-            }
-
-            if (!hasBgHighlight && color) {
-                if (!Array.from(cl).some(c => c.startsWith("hover:bg-"))) {
-                    cl.add(`hover:bg-${color}-50`, "transition-colors");
-                }
-                if (!Array.from(cl).some(c => c.startsWith("border-b"))) {
-                    cl.add("border-b", "border-slate-50");
-                }
+            if (raw.toLowerCase().includes('<html')) {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(raw, 'text/html');
+                const scripts = doc.querySelectorAll('script');
+                scripts.forEach(s => {
+                    if (s.textContent.includes('tailwind.config')) {
+                        userConfigScript = s.outerHTML;
+                        s.remove(); 
+                    }
+                });
+                headContent = doc.head.innerHTML;
+                bodyContent = doc.body.innerHTML;
             } else {
-                cl.add("transition-colors");
+                 if (raw.includes('tailwind.config')) {
+                    const match = raw.match(/<script>[\s\S]*?tailwind\.config[\s\S]*?<\/script>/);
+                    if (match) {
+                        userConfigScript = match[0];
+                        bodyContent = raw.replace(match[0], '');
+                    }
+                 }
             }
 
-            const spans = row.querySelectorAll("span");
-            if (spans[0]) {
-                spans[0].classList.add("text-base", "whitespace-nowrap");
+            return `<!DOCTYPE html><html><head>
+                <meta charset="utf-8">
+                ${userConfigScript}
+                <script src="https://cdn.tailwindcss.com"><\/script>
+                <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+                ${headContent}
+                <style>${css}</style>
+                </head><body>${bodyContent}</body></html>`;
+        }
+
+        // --- PREVIEW ---
+        function updatePreview() {
+            const width = state.width;
+            const content = getHTML(width);
+            const doc = els.iframe.contentWindow.document;
+            doc.open(); doc.write(content); doc.close();
+
+            els.iframe.style.width = width + 'px';
+            els.iframe.style.height = '100px';
+
+            els.iframe.onload = () => {
+                setTimeout(() => {
+                    const bodyH = els.iframe.contentDocument.documentElement.scrollHeight;
+                    // Allow height to be natural, no cropping, no forcing 16:9
+                    els.iframe.style.height = bodyH + 'px';
+                    fitToScreen();
+                }, 400);
+            };
+        }
+
+        function fitToScreen() {
+            const w = state.width;
+            const containerW = els.viewport.clientWidth - 80;
+            const fitScale = Math.min(1, containerW / w);
+            const totalScale = fitScale * state.zoom;
+            
+            els.container.style.transform = `scale(${totalScale})`;
+            els.container.style.width = w + 'px';
+            els.container.style.height = els.iframe.style.height;
+            
+            const visualH = parseInt(els.iframe.style.height) * totalScale;
+            els.container.style.marginBottom = `-${parseInt(els.iframe.style.height) - visualH}px`;
+            
+            els.zoomLabel.innerText = `ZOOM: ${Math.round(totalScale * 100)}%`;
+        }
+
+        function adjustZoom(delta) {
+            state.zoom = Math.max(0.1, state.zoom + delta);
+            fitToScreen();
+        }
+
+        function openPreviewTab() {
+            const width = state.width;
+            const fullHTML = getHTML(width);
+            const win = window.open("", "_blank");
+            if (win) {
+                win.document.open();
+                win.document.write(fullHTML);
+                win.document.close();
+            } else {
+                alert("Please allow pop-ups.");
             }
-            if (spans[1]) {
-                const s2 = spans[1].classList;
-                if (![...s2].some(c => c.startsWith("text-"))) {
-                    s2.add("text-slate-600");
-                }
-                s2.add("text-sm", "font-medium", "text-right");
-            }
-        });
-    }
-
-    function detectColumnColor(col) {
-        const probe = el => {
-            if (!el) return null;
-            const c = Array.from(el.classList).find(x =>
-                /^text-(orange|yellow|blue|red|amber|indigo)-\d+/.test(x) ||
-                /^bg-(orange|yellow|blue|red|amber|indigo)/.test(x) ||
-                /^from-(orange|yellow|blue|red|amber|indigo)/.test(x)
-            );
-            if (!c) return null;
-            const m = c.match(/(orange|yellow|blue|red|amber|indigo)/);
-            return m ? m[1] : null;
-        };
-
-        const header = col.children[0];
-        let color = probe(header);
-        if (color) return color;
-
-        const list = col.children[2];
-        if (list) {
-            const firstRow = list.querySelector("div");
-            color = probe(firstRow);
-            if (color) return color;
-            const firstSpan = firstRow && firstRow.querySelector("span");
-            color = probe(firstSpan);
-            if (color) return color;
         }
 
-        return null;
-    }
+        function debounce(func, wait) { let timeout; return function(...args) { clearTimeout(timeout); timeout = setTimeout(() => func.apply(this, args), wait); }; }
+        async function pasteCode() { try { els.editor.value = await navigator.clipboard.readText(); updatePreview(); } catch(e) { alert("Use Ctrl+V"); } }
+        function clearEditor() { els.editor.value = ''; updatePreview(); }
 
-    function stripTags(html) {
-        const div = document.createElement("div");
-        div.innerHTML = html;
-        return div.textContent || div.innerText || "";
-    }
-
-    function escapeHtml(str) {
-        return String(str).replace(/[&<>"']/g, s =>
-            s === "&" ? "&amp;" :
-                s === "<" ? "&lt;" :
-                    s === ">" ? "&gt;" :
-                        s === '"' ? "&quot;" : "&#39;"
-        );
-    }
-
-    // --- Safe Mode ---
-    function toggleSafeMode() {
-        if (document.getElementById('safe-mode-toggle').checked) {
-            captureWrapper.classList.add('safe-mode');
-        } else {
-            captureWrapper.classList.remove('safe-mode');
-        }
-    }
-
-    codeInput.addEventListener('input', () => {
-        updatePreview();
-        checkCodeHealth();
-    });
-
-    function togglePanel() {
-        isPanelOpen = !isPanelOpen;
-        if (isPanelOpen) {
-            panelContent.style.display = 'block';
-            panelChevron.style.transform = 'rotate(0deg)';
-        } else {
-            panelContent.style.display = 'none';
-            panelChevron.style.transform = 'rotate(-90deg)';
-        }
-    }
-
-    widthSlider.addEventListener('input', e => {
-        const val = e.target.value + 'px';
-        captureWrapper.style.width = val;
-        widthVal.textContent = val;
-        debugWidth.textContent = e.target.value;
-        updateCalculations();
-    });
-
-    zoomSlider.addEventListener('input', e => {
-        zoomVal.textContent = e.target.value + 'x';
-        updateCalculations();
-    });
-
-    function autoFit() {
-        captureWrapper.style.width = 'min-content';
-        const w = userContent.scrollWidth;
-        const finalW = Math.max(300, w);
-        captureWrapper.style.width = finalW + 'px';
-        widthSlider.value = finalW;
-        widthVal.textContent = finalW + 'px';
-        debugWidth.textContent = finalW;
-        updateCalculations();
-    }
-
-    document.getElementById('file-upload').addEventListener('change', function (e) {
-        const file = e.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = function (ev) {
-            codeInput.value = ev.target.result;
-            updatePreview();
-            checkCodeHealth();
-            setTimeout(centerScroll, 100);
-        };
-        reader.readAsText(file);
-    });
-
-    function openNewTab() {
-        const w = window.open('', '_blank');
-        const html = `<!DOCTYPE html>
-<html>
-<head>
-  <title>Crop Me! Preview</title>
-  <script src="https://cdn.tailwindcss.com"><\/script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Outfit:wght@300;400;600;800&family=Sarabun:wght@300;400;600;800&display=swap" rel="stylesheet">
-  <style>body { font-family: 'Outfit', sans-serif; margin: 0; }</style>
-</head>
-<body>${codeInput.value}</body>
-</html>`;
-        w.document.write(html);
-        w.document.close();
-    }
-
-    function updateCalculations() {
-        const baseWidth = parseInt(widthSlider.value, 10);
-        const zoom = parseFloat(zoomSlider.value);
-        const outWidth = Math.round(baseWidth * zoom);
-        calcRes.textContent = `${outWidth} x Auto`;
-
-        qualityBadge.className = "text-[10px] font-bold text-white px-2 py-0.5 rounded-full shadow-sm transition-colors";
-
-        if (outWidth < 1920) {
-            qualityBadge.textContent = "SD";
-            qualityBadge.classList.add("bg-gray-500");
-        } else if (outWidth < 3840) {
-            qualityBadge.textContent = "HD";
-            qualityBadge.classList.add("bg-green-500");
-        } else if (outWidth < 7680) {
-            qualityBadge.textContent = "4K ULTRA";
-            qualityBadge.classList.add("bg-gradient-to-r", "from-purple-500", "to-pink-500");
-        } else {
-            qualityBadge.textContent = "8K INSANE";
-            qualityBadge.classList.add("bg-gradient-to-r", "from-yellow-500", "to-red-600");
-        }
-    }
-
-    // --- Capture (full / cropped) ---
-    async function capture(isCrop = false, rect = null) {
-        loader.classList.remove('hidden');
-        document.getElementById('loader-status').textContent = isCrop
-            ? "Cropping High-Res Region..."
-            : "Rendering Full Canvas...";
-
-        // Wait for fonts before capture to avoid ghosting
-        if (document.fonts && document.fonts.ready) {
-            await document.fonts.ready;
-        }
-
-        let sx = 0, sy = 0, sw = 0, sh = 0;
-        if (isCrop && rect) {
-            const wrapperRect = captureWrapper.getBoundingClientRect();
-            sx = rect.x - wrapperRect.left;
-            sy = rect.y - wrapperRect.top;
-            sw = rect.width;
-            sh = rect.height;
-        }
-
-        const pixelRatio = parseFloat(zoomSlider.value);
-        const width = captureWrapper.scrollWidth;
-        const height = captureWrapper.scrollHeight;
-
-        const options = {
-            backgroundColor: null,
-            pixelRatio: pixelRatio,
-            width: width,
-            height: height,
-            style: {
-                transform: 'none',
-                margin: '0',
-                left: '0',
-                top: '0'
-            }
-        };
-
-        try {
-            const dataUrl = await htmlToImage.toJpeg(captureWrapper, options);
-            let finalUrl = dataUrl;
-
-            if (isCrop && rect) {
-                const img = new Image();
-                img.src = dataUrl;
-                await new Promise(res => img.onload = res);
-
-                const canvas = document.createElement("canvas");
-                canvas.width = sw * pixelRatio;
-                canvas.height = sh * pixelRatio;
-                const ctx = canvas.getContext("2d");
-                ctx.drawImage(
-                    img,
-                    sx * pixelRatio, sy * pixelRatio, sw * pixelRatio, sh * pixelRatio,
-                    0, 0, canvas.width, canvas.height
-                );
-                finalUrl = canvas.toDataURL("image/jpeg", 0.95);
-            }
-
-            const a = document.createElement("a");
-            a.download = `cropme-${Date.now()}.jpg`;
-            a.href = finalUrl;
-            a.click();
-        } catch (err) {
-            console.error(err);
-            alert("Error capturing image. Check console for details.");
-        } finally {
-            loader.classList.add('hidden');
-            if (isCrop) endCropMode();
-        }
-    }
-
-    // --- Crop selection tools ---
-    function startCropMode() {
-        isCropping = true;
-        if (isPanelOpen) togglePanel();
-        cropOverlay.classList.remove('hidden');
-        cropBox.classList.add('hidden');
-        cropToolbar.classList.remove('hidden');
-        cropToolbar.classList.add('flex');
-        cropBox.style.width = '0';
-        cropBox.style.height = '0';
-    }
-
-    function endCropMode() {
-        isCropping = false;
-        cropOverlay.classList.add('hidden');
-        cropToolbar.classList.add('hidden');
-        cropToolbar.classList.remove('flex');
-        isPanelOpen = true;
-        panelContent.style.display = 'block';
-        panelChevron.style.transform = 'rotate(0deg)';
-    }
-
-    function cancelCrop() {
-        endCropMode();
-    }
-
-    function getPointerPos(e) {
-        return e.touches
-            ? { x: e.touches[0].clientX, y: e.touches[0].clientY }
-            : { x: e.clientX, y: e.clientY };
-    }
-
-    cropOverlay.addEventListener('mousedown', cropStart);
-    cropOverlay.addEventListener('touchstart', cropStart, { passive: false });
-
-    function cropStart(e) {
-        if (e.target.closest('#crop-toolbar')) return;
-        e.preventDefault();
-        const p = getPointerPos(e);
-        startX = p.x;
-        startY = p.y;
-        cropBox.classList.remove('hidden');
-        cropBox.style.left = startX + 'px';
-        cropBox.style.top = startY + 'px';
-        cropBox.style.width = '0px';
-        cropBox.style.height = '0px';
-
-        document.addEventListener('mousemove', cropMove);
-        document.addEventListener('touchmove', cropMove, { passive: false });
-        document.addEventListener('mouseup', cropEnd);
-        document.addEventListener('touchend', cropEnd);
-    }
-
-    function cropMove(e) {
-        e.preventDefault();
-        const p = getPointerPos(e);
-        let w = p.x - startX;
-        let h = p.y - startY;
-        let left = startX;
-        let top = startY;
-
-        if (w < 0) {
-            left = p.x;
-            w = Math.abs(w);
-        }
-        if (h < 0) {
-            top = p.y;
-            h = Math.abs(h);
-        }
-
-        cropBox.style.left = left + 'px';
-        cropBox.style.top = top + 'px';
-        cropBox.style.width = w + 'px';
-        cropBox.style.height = h + 'px';
-    }
-
-    function cropEnd() {
-        document.removeEventListener('mousemove', cropMove);
-        document.removeEventListener('touchmove', cropMove);
-        document.removeEventListener('mouseup', cropEnd);
-        document.removeEventListener('touchend', cropEnd);
-    }
-
-    function snapCrop() {
-        const rect = {
-            x: parseInt(cropBox.style.left, 10),
-            y: parseInt(cropBox.style.top, 10),
-            width: parseInt(cropBox.style.width, 10),
-            height: parseInt(cropBox.style.height, 10)
-        };
-        if (rect.width < 10 || rect.height < 10) {
-            alert("Selection too small!");
-            return;
-        }
-        capture(true, rect);
-    }
-</script>
+    </script>
 </body>
 </html>
